@@ -1,0 +1,1 @@
+#define HIKARI_VERSION "2.3.3"
