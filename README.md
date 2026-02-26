@@ -23,38 +23,13 @@ and each group can have an arbitrary name. Views from one group can be spread
 among all available sheets. Some operations act on entire groups rather than
 individual views.
 
-## Setting up Wayland on FreeBSD
-
-Wayland currently requires some care to work properly on FreeBSD. This section
-aims to document the recent state of how to enable Wayland on the FreeBSD
-`STABLE` branch and will change once support is being improved.
-
-### Mouse configuration
-
-To make mice work `kern.evdev.rcpt_mask` should be set to `12`. Depending on
-your version of FreeBSD this is done automatically or via setting the value in
-`/etc/sysctl.conf`.
-
-Some systems might require `moused` for mice to work. Enable it with `service
-moused enable`. This requires setting `kern.evdev.rcpt_mask` to `3`.
-
-### Setting up XDG\_RUNTIME\_DIR
-
-This section describes how to use `/tmp` as your `XDG_RUNTIME_DIR`. Some Wayland
-clients (e.g. native Wayland `firefox`) require `posix_fallocate` to work in
-that directory. This is not supported by ZFS, therefore you should prevent the
-ZFS tmp dataset from mounting to `/tmp` and `mount -t tmpfs tmpfs /tmp`. To
-persist this setting edit your `/etc/fstab` appropriately to automatically mount
-`tmpfs` during boot.
-
-Additionally set `XDG_RUNTIME_DIR` to `/tmp` in your environment.
+## Setup
 
 ### Setting up PAM
 
 Setting up PAM is needed to give `hikari` the ability to unlock the screen when
 using the screen locker. Copy the appropriate `hikari-unlocker` file from the
-`pam.d` folder to `/usr/local/etc/pam.d` (or `/etc/pam.d` on most Linux
-systems).
+`pam.d` folder to `/etc/pam.d`.
 
 ### Setting up the keyboard layout
 
@@ -68,14 +43,13 @@ XKB_DEFAULT_LAYOUT "de(nodeadkeys),de"
 
 ## Building
 
-`hikari` currently only works on FreeBSD and Linux. This will likely change in
-the future when more systems adopt Wayland. When building directly from the
+`hikari` currently only works on Linux. When building directly from the
 repository, breaking changes might be encountered. These are documented in the
 `UPDATING` file which should be consulted before updating to a newer build.
 
 ### Dependencies
 
-* wlroots
+* wlroots-0.20
 * pango
 * cairo
 * libinput
@@ -83,7 +57,6 @@ repository, breaking changes might be encountered. These are documented in the
 * pixman
 * libucl
 * evdev-proto
-* epoll-shim (FreeBSD)
 * XWayland (optional, runtime dependency)
 
 ### Compiling and Installing
@@ -110,31 +83,17 @@ where `hikari` can find the default configuration on your system and is needed
 during the compilation process. To override installation paths for `etc` specify
 `ETC_PREFIX`.
 
-#### Building on FreeBSD
-
-Simply run `make`. The installation destination can be configured by setting
-`PREFIX` (default is `/usr/local` and does not need to be given explicitly).
+Simply run `make` with `WITH_POSIX_C_SOURCE`:
 
 ```
-make
+make WITH_POSIX_C_SOURCE=YES
 ```
 
-`uninstall` requires the same values for prefixes.
-
-#### Building on Linux
-
-On Linux `bmake` is required which needs to be run like so:
+The installation destination can be configured by setting `PREFIX` (default is
+`/usr/local` and does not need to be given explicitly).
 
 ```
-bmake WITH_POSIX_C_SOURCE=YES
-```
-
-The installation destination can be configured by
-setting`PREFIX` (default is `/usr/local` and does not need to be given
-explicitly).
-
-```
-bmake PREFIX=/usr/local install
+make PREFIX=/usr/local install
 ```
 
 `uninstall` requires the same values for prefixes.
