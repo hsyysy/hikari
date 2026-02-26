@@ -29,6 +29,8 @@
 #include <hikari/layer_shell.h>
 #endif
 
+#include <hikari/input_method_relay.h>
+
 struct wlr_input_device;
 
 struct hikari_output;
@@ -94,6 +96,14 @@ struct hikari_server {
 
   struct wlr_xdg_shell *xdg_shell;
   struct wlr_layer_shell_v1 *layer_shell;
+
+  struct wlr_xdg_activation_v1 *xdg_activation;
+  struct wl_listener xdg_activation_request;
+
+  struct wlr_cursor_shape_manager_v1 *cursor_shape_manager;
+  struct wl_listener cursor_shape_request;
+
+  struct hikari_input_method_relay input_method_relay;
 
   struct wlr_output_layout *output_layout;
   struct wlr_seat *seat;

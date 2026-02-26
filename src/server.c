@@ -23,6 +23,13 @@
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_xdg_activation_v1.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
+#include <wlr/types/wlr_viewporter.h>
+#include <wlr/types/wlr_cursor_shape_v1.h>
+#include <wlr/types/wlr_xdg_toplevel_icon_v1.h>
+#include <wlr/types/wlr_text_input_v3.h>
+#include <wlr/types/wlr_input_method_v2.h>
 
 #ifdef HAVE_LAYERSHELL
 #include <wlr/types/wlr_layer_shell_v1.h>
@@ -692,6 +699,95 @@ setup_layer_shell(struct hikari_server *server)
 }
 #endif
 
+static void
+xdg_activation_request_handler(struct wl_listener *listener, void *data)
+{
+  struct wlr_xdg_activation_v1_request_activate_event *event = data;
+  struct wlr_surface *surface = event->surface;
+
+  if (surface == NULL) {
+    return;
+  }
+
+  struct wlr_xdg_surface *xdg_surface =
+      wlr_xdg_surface_try_from_wlr_surface(surface);
+  if (xdg_surface == NULL) {
+    return;
+  }
+
+  struct hikari_xdg_view *xdg_view = xdg_surface->data;
+  if (xdg_view == NULL) {
+    return;
+  }
+
+  struct hikari_view *view = (struct hikari_view *)xdg_view;
+  if (view->sheet != NULL && view->sheet->workspace != NULL) {
+    hikari_workspace_focus_view(view->sheet->workspace, view);
+  }
+}
+
+static void
+setup_xdg_activation(struct hikari_server *server)
+{
+  server->xdg_activation = wlr_xdg_activation_v1_create(server->display);
+
+  server->xdg_activation_request.notify = xdg_activation_request_handler;
+  wl_signal_add(&server->xdg_activation->events.request_activate,
+      &server->xdg_activation_request);
+}
+
+static void
+cursor_shape_request_handler(struct wl_listener *listener, void *data)
+{
+  struct hikari_server *server =
+      wl_container_of(listener, server, cursor_shape_request);
+
+  if (!hikari_server_in_normal_mode()) {
+    return;
+  }
+
+  struct wlr_cursor_shape_manager_v1_request_set_shape_event *event = data;
+  struct wlr_seat *seat = server->seat;
+
+  struct wl_client *focused_client = NULL;
+  struct wlr_surface *focused_surface = seat->pointer_state.focused_surface;
+  if (focused_surface != NULL) {
+    focused_client = wl_resource_get_client(focused_surface->resource);
+  }
+
+  if (focused_client == NULL ||
+      event->seat_client->client != focused_client) {
+    return;
+  }
+
+  const char *cursor_name = wlr_cursor_shape_v1_name(event->shape);
+  hikari_cursor_set_image(&server->cursor, cursor_name);
+}
+
+static void
+setup_cursor_shape(struct hikari_server *server)
+{
+  server->cursor_shape_manager =
+      wlr_cursor_shape_manager_v1_create(server->display, 1);
+
+  server->cursor_shape_request.notify = cursor_shape_request_handler;
+  wl_signal_add(&server->cursor_shape_manager->events.request_set_shape,
+      &server->cursor_shape_request);
+}
+
+static void
+setup_input_method(struct hikari_server *server)
+{
+  struct wlr_text_input_manager_v3 *text_input_manager =
+      wlr_text_input_manager_v3_create(server->display);
+
+  struct wlr_input_method_manager_v2 *input_method_manager =
+      wlr_input_method_manager_v2_create(server->display);
+
+  hikari_input_method_relay_init(
+      &server->input_method_relay, text_input_manager, input_method_manager);
+}
+
 struct hikari_server hikari_server;
 
 static void
@@ -913,6 +1009,12 @@ server_init(struct hikari_server *server, char *config_path)
 #ifdef HAVE_LAYERSHELL
   setup_layer_shell(server);
 #endif
+  setup_xdg_activation(server);
+  wlr_viewporter_create(server->display);
+  wlr_fractional_scale_manager_v1_create(server->display, 1);
+  setup_cursor_shape(server);
+  wlr_xdg_toplevel_icon_manager_v1_create(server->display, 1);
+  setup_input_method(server);
 
   wl_list_init(&server->pointers);
   wl_list_init(&server->keyboards);
@@ -1048,6 +1150,8 @@ hikari_server_stop(void)
   wl_list_remove(&server->new_virtual_keyboard.link);
   wl_list_remove(&server->new_virtual_pointer.link);
 #endif
+  wl_list_remove(&server->xdg_activation_request.link);
+  wl_list_remove(&server->cursor_shape_request.link);
 
   if (server->shutdown_timer != NULL) {
     destroy_shutdown_timer(server);
@@ -1082,6 +1186,10 @@ hikari_server_stop(void)
 #if HAVE_XWAYLAND
   wlr_xwayland_destroy(server->xwayland);
 #endif
+
+  wl_list_remove(&server->input_method_relay.new_text_input.link);
+  wl_list_remove(&server->input_method_relay.new_input_method.link);
+  wl_list_remove(&server->input_method_relay.keyboard_focus_change.link);
 
   wlr_seat_destroy(server->seat);
   wlr_output_layout_destroy(server->output_layout);

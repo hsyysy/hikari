@@ -39,6 +39,7 @@ OBJS = \
 	indicator_frame.o \
 	input_buffer.o \
 	input_grab_mode.o \
+	input_method_relay.o \
 	keyboard.o \
 	keyboard_config.o \
 	layer_shell.o \
