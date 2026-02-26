@@ -744,6 +744,8 @@ parse_actions(
   success = true;
 
 done:
+  ucl_object_iterate_free(it);
+
   return success;
 }
 
@@ -800,6 +802,8 @@ parse_layouts(
   success = true;
 
 done:
+  ucl_object_iterate_free(it);
+
   return success;
 }
 
@@ -862,6 +866,7 @@ parse_keyboard_bindings(struct hikari_configuration *configuration,
   success = true;
 
 done:
+  ucl_object_iterate_free(it);
 
   return success;
 }
@@ -918,6 +923,7 @@ parse_mouse_bindings(struct hikari_configuration *configuration,
   success = true;
 
 done:
+  ucl_object_iterate_free(it);
 
   return success;
 }
@@ -1928,6 +1934,8 @@ hikari_configuration_fini(struct hikari_configuration *configuration)
   for (int i = 0; i < HIKARI_NR_OF_EXECS; i++) {
     hikari_exec_fini(&configuration->execs[i]);
   }
+
+  hikari_font_fini(&configuration->font);
 }
 
 struct hikari_output_config *

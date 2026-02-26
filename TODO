@@ -1,0 +1,26 @@
+Missing Wayland protocols (detected via foot warnings)
+======================================================
+
+[ ] xdg-activation-v1
+    - wlroots API: wlr_xdg_activation_v1_create()
+    - Purpose: Allow clients to request window activation/focus (e.g. urgent bell)
+    - foot fallback: colors window margins red instead
+
+[ ] wp-fractional-scale-v1
+    - wlroots API: wlr_fractional_scale_manager_v1_create()
+    - Purpose: Non-integer HiDPI scaling (1.25x, 1.5x, etc.)
+    - Currently: only integer scaling supported
+
+[ ] wp-cursor-shape-v1
+    - wlroots API: wlr_cursor_shape_manager_v1_create()
+    - Purpose: Server-side cursor shape rendering
+    - foot fallback: uses client-side cursors
+
+[ ] xdg-toplevel-icon-v1
+    - wlroots API: wlr_xdg_toplevel_icon_manager_v1_create()
+    - Purpose: Per-window custom icons set by applications
+
+[ ] zwp-text-input-v3 / input-method-v2
+    - wlroots API: wlr_text_input_manager_v3_create(), wlr_input_method_manager_v2_create()
+    - Purpose: IME (input method) support
+    - Critical for CJK input

@@ -212,7 +212,7 @@ hikari_layer_init(
   wl_signal_add(&wlr_layer_surface->surface->events.destroy, &layer->destroy);
 
   layer->map.notify = map_handler;
-  wl_signal_add(&wlr_layer_surface->events.map, &layer->map);
+  wl_signal_add(&wlr_layer_surface->surface->events.map, &layer->map);
 
   wl_list_insert(&output->layers[layer->layer], &layer->layer_surfaces);
 
@@ -255,10 +255,10 @@ init_popup(
   wl_signal_add(&wlr_popup->base->surface->events.commit, &layer_popup->commit);
 
   layer_popup->map.notify = map_popup_handler;
-  wl_signal_add(&wlr_popup->base->events.map, &layer_popup->map);
+  wl_signal_add(&wlr_popup->base->surface->events.map, &layer_popup->map);
 
   layer_popup->unmap.notify = unmap_popup_handler;
-  wl_signal_add(&wlr_popup->base->events.unmap, &layer_popup->unmap);
+  wl_signal_add(&wlr_popup->base->surface->events.unmap, &layer_popup->unmap);
 
   layer_popup->destroy.notify = destroy_popup_handler;
   wl_signal_add(&wlr_popup->base->events.destroy, &layer_popup->destroy);
@@ -309,8 +309,8 @@ damage_popup(struct hikari_layer_popup *layer_popup, bool whole)
   struct wlr_xdg_popup *popup = layer_popup->popup;
   struct wlr_surface *surface = popup->base->surface;
 
-  int popup_sx = popup->geometry.x - popup->base->current.geometry.x;
-  int popup_sy = popup->geometry.y - popup->base->current.geometry.y;
+  int popup_sx = popup->base->current.geometry.x - popup->base->current.geometry.x;
+  int popup_sy = popup->base->current.geometry.y - popup->base->current.geometry.y;
   int ox = popup_sx, oy = popup_sy;
 
   struct hikari_layer *layer;
@@ -325,8 +325,8 @@ damage_popup(struct hikari_layer_popup *layer_popup, bool whole)
 
       case HIKARI_LAYER_NODE_TYPE_POPUP:
         current = current->parent.node.popup;
-        ox += current->popup->geometry.x;
-        oy += current->popup->geometry.y;
+        ox += current->popup->base->current.geometry.x;
+        oy += current->popup->base->current.geometry.y;
         break;
     }
   }
@@ -421,7 +421,7 @@ map(struct hikari_layer *layer)
   wl_signal_add(&wlr_layer_surface->events.new_popup, &layer->new_popup);
 
   layer->unmap.notify = unmap_handler;
-  wl_signal_add(&wlr_layer_surface->events.unmap, &layer->unmap);
+  wl_signal_add(&wlr_layer_surface->surface->events.unmap, &layer->unmap);
 
   wl_list_remove(&layer->map.link);
 
@@ -458,7 +458,7 @@ unmap(struct hikari_layer *layer)
   wl_list_remove(&layer->unmap.link);
 
   layer->map.notify = map_handler;
-  wl_signal_add(&layer->surface->events.map, &layer->map);
+  wl_signal_add(&layer->surface->surface->events.map, &layer->map);
 
   layer->mapped = false;
 

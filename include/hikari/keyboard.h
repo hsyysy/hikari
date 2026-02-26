@@ -14,6 +14,7 @@
 struct hikari_keyboard {
   struct wl_list server_keyboards;
   struct wlr_input_device *device;
+  struct wlr_keyboard *keyboard;
 
   struct wl_listener modifiers;
   struct wl_listener key;
@@ -52,14 +53,14 @@ hikari_keyboard_get_codepoint(
     struct hikari_keyboard *keyboard, uint32_t keycode)
 {
   return xkb_state_key_get_utf32(
-      keyboard->device->keyboard->xkb_state, keycode);
+      keyboard->keyboard->xkb_state, keycode);
 }
 
 static inline bool
 hikari_keyboard_check_modifier(
     struct hikari_keyboard *keyboard, uint32_t modifier)
 {
-  uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->device->keyboard);
+  uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->keyboard);
 
   return modifiers == modifier;
 }

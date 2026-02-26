@@ -8,7 +8,6 @@
 #include <wlr/backend.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/render/wlr_texture.h>
-#include <wlr/types/wlr_matrix.h>
 
 #include <hikari/color.h>
 #include <hikari/configuration.h>

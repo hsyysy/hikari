@@ -125,6 +125,8 @@ hikari_cursor_init(
 
   wl_list_init(&cursor->surface_destroy.link);
   hikari_binding_group_init(cursor->bindings);
+
+  wlr_cursor_set_xcursor(wlr_cursor, cursor->cursor_mgr, "default");
 }
 
 void
@@ -149,6 +151,9 @@ void
 hikari_cursor_activate(struct hikari_cursor *cursor)
 {
   struct wlr_cursor *wlr_cursor = cursor->wlr_cursor;
+
+  fprintf(stderr, "[HIKARI-DBG] cursor_activate: wlr_cursor=%p pos=(%.0f,%.0f)\n",
+      (void *)wlr_cursor, wlr_cursor->x, wlr_cursor->y);
 
   cursor->motion_absolute.notify = motion_absolute_handler;
   wl_signal_add(&wlr_cursor->events.motion_absolute, &cursor->motion_absolute);
@@ -192,10 +197,10 @@ hikari_cursor_set_image(struct hikari_cursor *cursor, const char *path)
   wl_list_init(&cursor->surface_destroy.link);
 
   if (path != NULL) {
-    wlr_xcursor_manager_set_cursor_image(
-        cursor->cursor_mgr, path, cursor->wlr_cursor);
+    wlr_cursor_set_xcursor(
+        cursor->wlr_cursor, cursor->cursor_mgr, path);
   } else {
-    wlr_cursor_set_image(cursor->wlr_cursor, NULL, 0, 0, 0, 0, 0, 0);
+    wlr_cursor_unset_image(cursor->wlr_cursor);
   }
 }
 
@@ -218,12 +223,25 @@ motion_absolute_handler(struct wl_listener *listener, void *data)
 
   assert(!hikari_server_in_lock_mode());
 
-  struct wlr_event_pointer_motion_absolute *event = data;
+  struct wlr_pointer_motion_absolute_event *event = data;
+
+  static int dbg_abs_count = 0;
+  dbg_abs_count++;
+  if (dbg_abs_count <= 5 || dbg_abs_count % 100 == 0)
+    fprintf(stderr, "[HIKARI-DBG] motion_absolute: #%d x=%.2f y=%.2f\n",
+        dbg_abs_count, event->x, event->y);
 
   wlr_cursor_warp_absolute(
-      cursor->wlr_cursor, event->device, event->x, event->y);
+      cursor->wlr_cursor, &event->pointer->base, event->x, event->y);
 
   hikari_server.mode->cursor_move(event->time_msec);
+
+  struct hikari_output *output;
+  wl_list_for_each (output, &hikari_server.outputs, server_outputs) {
+    if (output->enabled) {
+      hikari_output_damage_whole(output);
+    }
+  }
 }
 
 static void
@@ -241,12 +259,26 @@ motion_handler(struct wl_listener *listener, void *data)
 
   assert(!hikari_server_in_lock_mode());
 
-  struct wlr_event_pointer_motion *event = data;
+  struct wlr_pointer_motion_event *event = data;
+
+  static int dbg_motion_count = 0;
+  dbg_motion_count++;
+  if (dbg_motion_count <= 5 || dbg_motion_count % 100 == 0)
+    fprintf(stderr, "[HIKARI-DBG] motion: #%d dx=%.2f dy=%.2f cursor_pos=(%.0f,%.0f)\n",
+        dbg_motion_count, event->delta_x, event->delta_y,
+        cursor->wlr_cursor->x, cursor->wlr_cursor->y);
 
   wlr_cursor_move(
-      cursor->wlr_cursor, event->device, event->delta_x, event->delta_y);
+      cursor->wlr_cursor, &event->pointer->base, event->delta_x, event->delta_y);
 
   hikari_server.mode->cursor_move(event->time_msec);
+
+  struct hikari_output *output;
+  wl_list_for_each (output, &hikari_server.outputs, server_outputs) {
+    if (output->enabled) {
+      hikari_output_damage_whole(output);
+    }
+  }
 }
 
 static void
@@ -255,7 +287,7 @@ button_handler(struct wl_listener *listener, void *data)
   assert(!hikari_server_in_lock_mode());
 
   struct hikari_cursor *cursor = wl_container_of(listener, cursor, button);
-  struct wlr_event_pointer_button *event = data;
+  struct wlr_pointer_button_event *event = data;
 
   hikari_server.mode->button_handler(cursor, event);
 }
@@ -265,14 +297,15 @@ axis_handler(struct wl_listener *listener, void *data)
 {
   assert(!hikari_server_in_lock_mode());
 
-  struct wlr_event_pointer_axis *event = data;
+  struct wlr_pointer_axis_event *event = data;
 
   wlr_seat_pointer_notify_axis(hikari_server.seat,
       event->time_msec,
       event->orientation,
       event->delta,
       event->delta_discrete,
-      event->source);
+      event->source,
+      event->relative_direction);
 }
 
 static void

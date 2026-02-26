@@ -5,6 +5,10 @@
 static void
 set_mode(struct hikari_decoration *decoration)
 {
+  if (!decoration->decoration->toplevel->base->initialized) {
+    return;
+  }
+
   wlr_xdg_toplevel_decoration_v1_set_mode(
       decoration->decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
 }
@@ -42,6 +46,4 @@ hikari_decoration_init(struct hikari_decoration *decoration,
 
   wl_signal_add(&wlr_decoration->events.destroy, &decoration->destroy);
   decoration->destroy.notify = destroy_handler;
-
-  set_mode(decoration);
 }

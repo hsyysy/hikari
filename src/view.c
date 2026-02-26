@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_subcompositor.h>
 
 #include <hikari/color.h>
 #include <hikari/configuration.h>
@@ -87,6 +88,9 @@ static void
 raise_view(struct hikari_view *view)
 {
   assert(view != NULL);
+
+  fprintf(stderr, "[HIKARI-DBG] raise_view: view=%p sheet=%p workspace=%p\n",
+      (void *)view, (void *)view->sheet, (void *)view->sheet->workspace);
 
   move_to_top(view);
   place_visibly_above(view, view->sheet->workspace);
@@ -545,6 +549,11 @@ hikari_view_damage_whole(struct hikari_view *view)
 
   struct hikari_output *output = view->output;
 
+  fprintf(stderr, "[HIKARI-DBG] hikari_view_damage_whole: view=%p output=%p enabled=%d use_csd=%d geometry=%dx%d+%d+%d\n",
+      (void *)view, (void *)output, output->enabled, view->use_csd,
+      hikari_view_geometry(view)->width, hikari_view_geometry(view)->height,
+      hikari_view_geometry(view)->x, hikari_view_geometry(view)->y);
+
   // TODO I know, this needs to be done A LOT better
   if (view->use_csd) {
     hikari_output_damage_whole(output);
@@ -800,6 +809,10 @@ hikari_view_map(struct hikari_view *view, struct wlr_surface *surface)
   struct hikari_group *group;
   bool focus;
 
+  fprintf(stderr, "[HIKARI-DBG] hikari_view_map: view=%p sheet=%p output=%p output_enabled=%d lock_mode=%d\n",
+      (void *)view, (void *)sheet, (void *)output, output->enabled,
+      hikari_server_in_lock_mode());
+
   struct hikari_view_config *view_config =
       hikari_configuration_resolve_view_config(hikari_configuration, view->id);
 
@@ -850,7 +863,10 @@ hikari_view_map(struct hikari_view *view, struct wlr_surface *surface)
   wl_list_insert(&group->views, &view->group_views);
   wl_list_insert(&output->views, &view->output_views);
 
+  fprintf(stderr, "[HIKARI-DBG] hikari_view_map: added to lists, group=%p\n", (void *)group);
+
   if (!hikari_server_in_lock_mode() || hikari_view_is_public(view)) {
+    fprintf(stderr, "[HIKARI-DBG] hikari_view_map: calling hikari_view_show\n");
     hikari_view_show(view);
 
     if (focus) {
@@ -858,7 +874,9 @@ hikari_view_map(struct hikari_view *view, struct wlr_surface *surface)
     }
 
     hikari_server_cursor_focus();
+    fprintf(stderr, "[HIKARI-DBG] hikari_view_map: view shown, focus=%d\n", focus);
   } else {
+    fprintf(stderr, "[HIKARI-DBG] hikari_view_map: in lock mode, setting forced\n");
     hikari_view_set_forced(view);
     increase_group_visiblity(view);
     raise_view(view);
@@ -947,9 +965,9 @@ hikari_view_show(struct hikari_view *view)
   assert(hikari_view_is_hidden(view));
   assert(!hikari_view_is_forced(view));
 
-#if !defined(NDEBUG)
-  printf("SHOW %p\n", view);
-#endif
+  fprintf(stderr, "[HIKARI-DBG] hikari_view_show: view=%p output=%p output_enabled=%d\n",
+      (void *)view, (void *)view->output, view->output->enabled);
+
   hikari_view_unset_hidden(view);
 
   increase_group_visiblity(view);
@@ -957,6 +975,8 @@ hikari_view_show(struct hikari_view *view)
   raise_view(view);
 
   hikari_view_damage_whole(view);
+
+  fprintf(stderr, "[HIKARI-DBG] hikari_view_show: done, is_first=%d\n", is_first_view(view));
 
   assert(is_first_view(view));
 }

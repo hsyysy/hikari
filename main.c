@@ -3,9 +3,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifndef NDEBUG
 #include <wlr/util/log.h>
-#endif
 
 #include <hikari/server.h>
 
@@ -191,9 +189,7 @@ parse_options(int argc, char **argv, struct options *options)
 int
 main(int argc, char **argv)
 {
-#ifndef NDEBUG
   wlr_log_init(WLR_DEBUG, NULL);
-#endif
   struct options options;
   parse_options(argc, argv, &options);
 

@@ -15,7 +15,7 @@ static void
 update_mod_state(struct hikari_keyboard *keyboard)
 {
   uint32_t modifier_keys =
-      wlr_keyboard_get_modifiers(keyboard->device->keyboard);
+      wlr_keyboard_get_modifiers(keyboard->keyboard);
 
   bool was_pressed = hikari_server.keyboard_state.mod_pressed;
   bool is_pressed = modifier_keys & WLR_MODIFIER_LOGO;
@@ -30,7 +30,7 @@ static void
 key_handler(struct wl_listener *listener, void *data)
 {
   struct hikari_keyboard *keyboard = wl_container_of(listener, keyboard, key);
-  struct wlr_event_keyboard_key *event = data;
+  struct wlr_keyboard_key_event *event = data;
 
   hikari_server.mode->key_handler(keyboard, event);
 }
@@ -138,18 +138,19 @@ hikari_keyboard_init(
     struct hikari_keyboard *keyboard, struct wlr_input_device *device)
 {
   keyboard->device = device;
+  keyboard->keyboard = wlr_keyboard_from_input_device(device);
   keyboard->keymap = NULL;
 
   keyboard->modifiers.notify = modifiers_handler;
-  wl_signal_add(&device->keyboard->events.modifiers, &keyboard->modifiers);
+  wl_signal_add(&keyboard->keyboard->events.modifiers, &keyboard->modifiers);
 
   keyboard->key.notify = key_handler;
-  wl_signal_add(&device->keyboard->events.key, &keyboard->key);
+  wl_signal_add(&keyboard->keyboard->events.key, &keyboard->key);
 
   keyboard->destroy.notify = destroy_handler;
-  wl_signal_add(&device->keyboard->events.destroy, &keyboard->destroy);
+  wl_signal_add(&keyboard->device->events.destroy, &keyboard->destroy);
 
-  wlr_seat_set_keyboard(hikari_server.seat, device);
+  wlr_seat_set_keyboard(hikari_server.seat, keyboard->keyboard);
 
   wl_list_insert(&hikari_server.keyboards, &keyboard->server_keyboards);
 
@@ -191,13 +192,13 @@ hikari_keyboard_configure(struct hikari_keyboard *keyboard,
 {
   keyboard->keymap = load_keymap(keyboard_config);
   assert(keyboard->keymap != NULL);
-  wlr_keyboard_set_keymap(keyboard->device->keyboard, keyboard->keymap);
+  wlr_keyboard_set_keymap(keyboard->keyboard, keyboard->keymap);
 
   int repeat_rate = hikari_keyboard_config_get_repeat_rate(keyboard_config);
   int repeat_delay = hikari_keyboard_config_get_repeat_delay(keyboard_config);
 
   wlr_keyboard_set_repeat_info(
-      keyboard->device->keyboard, repeat_rate, repeat_delay);
+      keyboard->keyboard, repeat_rate, repeat_delay);
 }
 
 void
@@ -217,7 +218,7 @@ hikari_keyboard_for_keysym(struct hikari_keyboard *keyboard,
 {
   const xkb_keysym_t *syms;
   int nsyms = xkb_state_key_get_syms(
-      keyboard->device->keyboard->xkb_state, keycode, &syms);
+      keyboard->keyboard->xkb_state, keycode, &syms);
 
   for (int i = 0; i < nsyms; i++) {
     iter(keyboard, keycode, syms[i]);

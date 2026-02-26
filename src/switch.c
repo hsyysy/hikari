@@ -25,6 +25,7 @@ destroy_handler(struct wl_listener *listener, void *data)
   struct hikari_switch *swtch = wl_container_of(listener, swtch, destroy);
 
   hikari_switch_fini(swtch);
+  hikari_free(swtch);
 }
 
 static void
@@ -53,6 +54,7 @@ void
 hikari_switch_init(struct hikari_switch *swtch, struct wlr_input_device *device)
 {
   swtch->device = device;
+  swtch->wlr_switch = wlr_switch_from_input_device(device);
   swtch->state = WLR_SWITCH_STATE_OFF;
   swtch->action = NULL;
 
@@ -76,13 +78,11 @@ void
 hikari_switch_configure(
     struct hikari_switch *swtch, struct hikari_switch_config *switch_config)
 {
-  struct wlr_input_device *device = swtch->device;
-
   swtch->action = &switch_config->action;
 
   wl_list_remove(&swtch->toggle.link);
   swtch->toggle.notify = toggle_handler;
-  wl_signal_add(&device->switch_device->events.toggle, &swtch->toggle);
+  wl_signal_add(&swtch->wlr_switch->events.toggle, &swtch->toggle);
 }
 
 void

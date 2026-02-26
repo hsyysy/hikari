@@ -11,6 +11,7 @@ struct hikari_switch {
   struct wl_list server_switches;
 
   struct wlr_input_device *device;
+  struct wlr_switch *wlr_switch;
 
   enum wlr_switch_state state;
 
