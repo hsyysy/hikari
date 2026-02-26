@@ -21,6 +21,8 @@ struct hikari_xwayland_unmanaged_view {
 
   struct wlr_box geometry;
 
+  struct wl_listener associate;
+  struct wl_listener dissociate;
   struct wl_listener map;
   struct wl_listener unmap;
   struct wl_listener destroy;

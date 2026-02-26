@@ -128,6 +128,7 @@ CFLAGS += -DHAVE_VIRTUAL_INPUT=1
 endif
 
 CFLAGS += -Wall -I. -Iinclude -DHIKARI_ETC_PREFIX=$(ETC_PREFIX)
+CFLAGS += -MMD -MP
 
 WLROOTS_CFLAGS := $(shell $(PKG_CONFIG) --cflags wlroots-0.20)
 WLROOTS_LIBS := $(shell $(PKG_CONFIG) --libs wlroots-0.20)
@@ -181,7 +182,11 @@ ifdef WITH_LAYERSHELL
 PROTOCOL_HEADERS += wlr-layer-shell-unstable-v1-protocol.h
 endif
 
+DEPS = $(OBJS:.o=.d)
+
 all: hikari hikari-unlocker
+
+-include $(DEPS)
 
 version.h:
 	echo "#define HIKARI_VERSION \"$(VERSION)\"" >> version.h
@@ -207,7 +212,7 @@ clean: clean-doc
 	@test -e _darcs && rm version.h 2> /dev/null ||:
 	@rm $(PROTOCOL_HEADERS) 2> /dev/null ||:
 	@echo "cleaning object files"
-	@rm $(OBJS) 2> /dev/null ||:
+	@rm -f $(OBJS) $(DEPS)
 	@echo "cleaning executables"
 	@rm hikari 2> /dev/null ||:
 	@rm hikari-unlocker 2> /dev/null ||:

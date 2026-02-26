@@ -12,6 +12,8 @@ struct hikari_xwayland_view {
 
   struct wlr_xwayland_surface *surface;
 
+  struct wl_listener associate;
+  struct wl_listener dissociate;
   struct wl_listener map;
   struct wl_listener unmap;
   struct wl_listener destroy;

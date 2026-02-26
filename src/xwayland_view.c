@@ -232,6 +232,33 @@ unmap_handler(struct wl_listener *listener, void *data)
 }
 
 static void
+dissociate_handler(struct wl_listener *listener, void *data)
+{
+  struct hikari_xwayland_view *xwayland_view =
+      wl_container_of(listener, xwayland_view, dissociate);
+
+  wl_list_remove(&xwayland_view->map.link);
+  wl_list_remove(&xwayland_view->unmap.link);
+}
+
+static void
+associate_handler(struct wl_listener *listener, void *data)
+{
+  struct hikari_xwayland_view *xwayland_view =
+      wl_container_of(listener, xwayland_view, associate);
+
+  struct wlr_xwayland_surface *xwayland_surface = xwayland_view->surface;
+
+  xwayland_view->map.notify = map_handler;
+  wl_signal_add(
+      &xwayland_surface->surface->events.map, &xwayland_view->map);
+
+  xwayland_view->unmap.notify = unmap_handler;
+  wl_signal_add(
+      &xwayland_surface->surface->events.unmap, &xwayland_view->unmap);
+}
+
+static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
   struct hikari_xwayland_view *xwayland_view =
@@ -249,8 +276,12 @@ destroy_handler(struct wl_listener *listener, void *data)
 
   hikari_view_fini(&xwayland_view->view);
 
-  wl_list_remove(&xwayland_view->map.link);
-  wl_list_remove(&xwayland_view->unmap.link);
+  wl_list_remove(&xwayland_view->associate.link);
+  wl_list_remove(&xwayland_view->dissociate.link);
+  if (xwayland_view->surface->surface) {
+    wl_list_remove(&xwayland_view->map.link);
+    wl_list_remove(&xwayland_view->unmap.link);
+  }
   wl_list_remove(&xwayland_view->destroy.link);
   wl_list_remove(&xwayland_view->request_configure.link);
   wl_list_remove(&xwayland_view->set_title.link);
@@ -401,11 +432,17 @@ hikari_xwayland_view_init(struct hikari_xwayland_view *xwayland_view,
 
   xwayland_view->surface = xwayland_surface;
 
-  xwayland_view->map.notify = map_handler;
-  wl_signal_add(&xwayland_surface->surface->events.map, &xwayland_view->map);
+  xwayland_view->associate.notify = associate_handler;
+  wl_signal_add(
+      &xwayland_surface->events.associate, &xwayland_view->associate);
 
-  xwayland_view->unmap.notify = unmap_handler;
-  wl_signal_add(&xwayland_surface->surface->events.unmap, &xwayland_view->unmap);
+  xwayland_view->dissociate.notify = dissociate_handler;
+  wl_signal_add(
+      &xwayland_surface->events.dissociate, &xwayland_view->dissociate);
+
+  if (xwayland_surface->surface) {
+    associate_handler(&xwayland_view->associate, NULL);
+  }
 
   xwayland_view->destroy.notify = destroy_handler;
   wl_signal_add(&xwayland_surface->events.destroy, &xwayland_view->destroy);
