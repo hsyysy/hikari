@@ -432,9 +432,13 @@ hikari_view_init(
   view->child = child;
   view->current_geometry = &view->geometry;
   view->current_unmaximized_geometry = &view->geometry;
+  view->surface_geometry_x = 0;
+  view->surface_geometry_y = 0;
 
   hikari_view_unset_dirty(view);
   view->pending_operation.tile = NULL;
+
+  view->decoration.wlr_decoration = NULL;
 
   wl_list_init(&view->children);
 }
@@ -452,6 +456,10 @@ hikari_view_fini(struct hikari_view *view)
 
   hikari_free(view->title);
   hikari_free(view->id);
+
+  if (view->decoration.wlr_decoration != NULL) {
+    wl_list_remove(&view->decoration.mode.link);
+  }
 
   if (view->group != NULL) {
     detach_from_group(view);

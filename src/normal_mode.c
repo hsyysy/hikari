@@ -324,6 +324,8 @@ key_handler(
     struct hikari_binding_group *bindings = &keyboard->bindings[modifiers];
 
     if (handle_input(bindings, event->keycode)) {
+      fprintf(stderr, "[HIKARI-KEY] consumed: keycode=%u modifiers=0x%x\n",
+          event->keycode, modifiers);
       return;
     }
   }

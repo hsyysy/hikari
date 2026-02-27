@@ -67,6 +67,9 @@ commit_handler(struct wl_listener *listener, void *data)
     return;
   }
 
+  view->surface_geometry_x = surface->geometry.x;
+  view->surface_geometry_y = surface->geometry.y;
+
   uint32_t serial = surface->current.configure_serial;
 
   if (hikari_view_was_updated(view, serial)) {
@@ -116,7 +119,9 @@ commit_handler(struct wl_listener *listener, void *data)
     } else if (output->enabled) {
       if (visible) {
         hikari_output_add_effective_surface_damage(
-            output, surface->surface, geometry->x, geometry->y);
+            output, surface->surface,
+            geometry->x - view->surface_geometry_x,
+            geometry->y - view->surface_geometry_y);
       } else {
         hikari_output_schedule_frame(output);
       }
@@ -142,6 +147,10 @@ first_map(struct hikari_xdg_view *xdg_view, bool *focus)
   struct wlr_box *geometry = &xdg_view->view.geometry;
 
   *geometry = xdg_surface->geometry;
+  view->surface_geometry_x = geometry->x;
+  view->surface_geometry_y = geometry->y;
+  geometry->x = 0;
+  geometry->y = 0;
   hikari_view_refresh_geometry(view, geometry);
 
   const char *app_id = get_app_id(xdg_view);

@@ -210,7 +210,6 @@ clean-doc:
 clean: clean-doc
 	@echo "cleaning headers"
 	@test -e _darcs && rm version.h 2> /dev/null ||:
-	@rm $(PROTOCOL_HEADERS) 2> /dev/null ||:
 	@echo "cleaning object files"
 	@rm -f $(OBJS) $(DEPS)
 	@echo "cleaning executables"

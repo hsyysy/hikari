@@ -1044,6 +1044,7 @@ server_init(struct hikari_server *server, char *config_path)
 static void
 sig_handler(int signal)
 {
+  fprintf(stderr, "[HIKARI-QUIT] sig_handler called with signal %d\n", signal);
   hikari_server_terminate(NULL);
 }
 
@@ -1103,6 +1104,8 @@ destroy_shutdown_timer(struct hikari_server *server)
 void
 hikari_server_terminate(void *arg)
 {
+  fprintf(stderr, "[HIKARI-QUIT] hikari_server_terminate called\n");
+
   struct hikari_server *server = &hikari_server;
 
   if (server->shutdown_timer != NULL) {

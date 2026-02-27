@@ -347,7 +347,10 @@ render_view(struct hikari_renderer *renderer, struct hikari_view *view)
     render_border(&view->border, renderer);
   }
 
-  renderer->geometry = hikari_view_geometry(view);
+  struct wlr_box render_geo = *hikari_view_geometry(view);
+  render_geo.x -= view->surface_geometry_x;
+  render_geo.y -= view->surface_geometry_y;
+  renderer->geometry = &render_geo;
 
   hikari_node_for_each_surface(
       (struct hikari_node *)view, render_surface, renderer);
@@ -604,7 +607,10 @@ render_public_views(struct hikari_renderer *renderer)
         render_border(&view->border, renderer);
       }
 
-      renderer->geometry = hikari_view_geometry(view);
+      struct wlr_box render_geo = *hikari_view_geometry(view);
+      render_geo.x -= view->surface_geometry_x;
+      render_geo.y -= view->surface_geometry_y;
+      renderer->geometry = &render_geo;
 
       hikari_node_for_each_surface(
           (struct hikari_node *)view, render_surface, renderer);
