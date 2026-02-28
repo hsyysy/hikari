@@ -178,8 +178,11 @@ surface_at(
 
   struct wlr_box *geometry = hikari_view_geometry(view);
 
-  double x = ox - geometry->x;
-  double y = oy - geometry->y;
+  // wlr_xdg_surface_surface_at expects surface-local coordinates (relative to
+  // the wlr_surface origin), not XDG geometry-relative coordinates. Account for
+  // the XDG geometry offset so CSD shadows/decorations are handled correctly.
+  double x = ox - geometry->x + view->surface_geometry_x;
+  double y = oy - geometry->y + view->surface_geometry_y;
 
   return wlr_xdg_surface_surface_at(xdg_view->surface, x, y, sx, sy);
 }
