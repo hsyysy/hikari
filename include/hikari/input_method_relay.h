@@ -2,6 +2,7 @@
 #define HIKARI_INPUT_METHOD_RELAY_H
 
 #include <wayland-server-core.h>
+#include <wlr/util/box.h>
 
 struct wlr_input_method_v2;
 struct wlr_text_input_manager_v3;
@@ -19,14 +20,30 @@ struct hikari_text_input {
   struct wl_listener destroy;
 };
 
+struct hikari_input_popup {
+  struct wlr_input_popup_surface_v2 *popup;
+  struct hikari_input_method_relay *relay;
+  struct wl_list link;
+
+  struct wl_listener destroy;
+  struct wl_listener surface_commit;
+  struct wl_listener surface_map;
+  struct wl_listener surface_unmap;
+
+  bool mapped;
+  struct wlr_box geometry;
+};
+
 struct hikari_input_method_relay {
   struct wl_list text_inputs;
+  struct wl_list popups;
   struct wlr_input_method_v2 *input_method;
 
   struct wl_listener new_text_input;
   struct wl_listener new_input_method;
   struct wl_listener input_method_commit;
   struct wl_listener input_method_grab_keyboard;
+  struct wl_listener input_method_new_popup;
   struct wl_listener input_method_destroy;
   struct wl_listener keyboard_focus_change;
 };

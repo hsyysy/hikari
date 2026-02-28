@@ -185,6 +185,15 @@ new_virtual_keyboard_handler(struct wl_listener *listener, void *data)
   struct wlr_input_device *device = &keyboard->keyboard.base;
 
   add_input(server, device);
+
+  /* Mark the keyboard as virtual so key events bypass the IM grab */
+  struct hikari_keyboard *hk;
+  wl_list_for_each (hk, &server->keyboards, server_keyboards) {
+    if (hk->device == device) {
+      hk->is_virtual = true;
+      break;
+    }
+  }
 }
 
 static void

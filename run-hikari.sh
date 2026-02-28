@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# === Hikari Release Launcher ===
+# === Hikari Launcher ===
 
 unset DISPLAY
 unset XAUTHORITY
@@ -11,4 +11,10 @@ if [ -z "$XDG_RUNTIME_DIR" ]; then
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 fi
 
-exec hikari -c ~/.config/hikari.conf > /dev/null 2>&1
+# --- fcitx5 environment ---
+export XMODIFIERS=@im=fcitx
+# Uncomment below if some apps don't pick up the input method:
+# export GTK_IM_MODULE=fcitx
+# export QT_IM_MODULE=fcitx
+
+exec hikari -c ~/.config/hikari.conf

@@ -140,6 +140,7 @@ hikari_keyboard_init(
   keyboard->device = device;
   keyboard->keyboard = wlr_keyboard_from_input_device(device);
   keyboard->keymap = NULL;
+  keyboard->is_virtual = false;
 
   keyboard->modifiers.notify = modifiers_handler;
   wl_signal_add(&keyboard->keyboard->events.modifiers, &keyboard->modifiers);

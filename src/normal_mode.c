@@ -1,6 +1,7 @@
 #include <hikari/normal_mode.h>
 
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_seat.h>
 
 #include <hikari/action.h>
@@ -175,8 +176,17 @@ modifiers_handler(struct hikari_keyboard *keyboard)
 #endif
   }
 
-  wlr_seat_keyboard_notify_modifiers(
-      hikari_server.seat, &keyboard->keyboard->modifiers);
+  struct wlr_input_method_v2 *im =
+      hikari_server.input_method_relay.input_method;
+  if (im != NULL && im->keyboard_grab != NULL && !keyboard->is_virtual) {
+    wlr_input_method_keyboard_grab_v2_set_keyboard(
+        im->keyboard_grab, keyboard->keyboard);
+    wlr_input_method_keyboard_grab_v2_send_modifiers(
+        im->keyboard_grab, &keyboard->keyboard->modifiers);
+  } else {
+    wlr_seat_keyboard_notify_modifiers(
+        hikari_server.seat, &keyboard->keyboard->modifiers);
+  }
 }
 
 static void
@@ -331,8 +341,21 @@ key_handler(
   }
 
   wlr_seat_set_keyboard(hikari_server.seat, keyboard->keyboard);
-  wlr_seat_keyboard_notify_key(
-      hikari_server.seat, event->time_msec, event->keycode, event->state);
+
+  struct wlr_input_method_v2 *im =
+      hikari_server.input_method_relay.input_method;
+  if (im != NULL && im->keyboard_grab != NULL && !keyboard->is_virtual) {
+    fprintf(stderr, "[HIKARI-KEY] forwarding to IM grab: keycode=%u state=%u\n",
+        event->keycode, event->state);
+    wlr_input_method_keyboard_grab_v2_send_key(
+        im->keyboard_grab, event->time_msec, event->keycode, event->state);
+  } else {
+    fprintf(stderr, "[HIKARI-KEY] forwarding to seat: keycode=%u state=%u im=%p grab=%p virt=%d\n",
+        event->keycode, event->state, (void *)im,
+        im ? (void *)im->keyboard_grab : NULL, keyboard->is_virtual);
+    wlr_seat_keyboard_notify_key(
+        hikari_server.seat, event->time_msec, event->keycode, event->state);
+  }
 }
 
 void

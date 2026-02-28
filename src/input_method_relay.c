@@ -7,7 +7,9 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_compositor.h>
 
+#include <hikari/output.h>
 #include <hikari/server.h>
+#include <hikari/view.h>
 
 static struct hikari_text_input *
 relay_find_focused_text_input(struct hikari_input_method_relay *relay)
@@ -46,11 +48,148 @@ relay_send_im_state(
 }
 
 static void
+damage_popup(struct hikari_input_popup *popup)
+{
+  if (!popup->mapped) {
+    return;
+  }
+
+  struct hikari_output *output = hikari_server.workspace->output;
+  if (output != NULL) {
+    hikari_output_damage_whole(output);
+  }
+}
+
+static void
+popup_update_position(struct hikari_input_popup *popup)
+{
+  struct hikari_text_input *text_input =
+      relay_find_focused_text_input(popup->relay);
+
+  if (text_input == NULL || text_input->input->focused_surface == NULL) {
+    return;
+  }
+
+  struct wlr_text_input_v3 *ti = text_input->input;
+  struct wlr_box cursor_rect = ti->current.cursor_rectangle;
+
+  /* Find the view that owns the focused surface to get its position */
+  struct hikari_view *focus_view = hikari_server.workspace->focus_view;
+  int view_x = 0, view_y = 0;
+  if (focus_view != NULL) {
+    const struct wlr_box *geo = hikari_view_geometry(focus_view);
+    view_x = geo->x;
+    view_y = geo->y;
+  }
+
+  /* Position popup below the cursor rectangle */
+  popup->geometry.x = view_x + cursor_rect.x;
+  popup->geometry.y = view_y + cursor_rect.y + cursor_rect.height;
+
+  struct wlr_surface *surface = popup->popup->surface;
+  popup->geometry.width = surface->current.width;
+  popup->geometry.height = surface->current.height;
+
+  /* Send the cursor rectangle to the popup so fcitx5 can size itself */
+  struct wlr_box sbox = {
+    .x = cursor_rect.x,
+    .y = cursor_rect.y,
+    .width = cursor_rect.width,
+    .height = cursor_rect.height,
+  };
+  wlr_input_popup_surface_v2_send_text_input_rectangle(popup->popup, &sbox);
+}
+
+static void
+handle_popup_surface_commit(struct wl_listener *listener, void *data)
+{
+  struct hikari_input_popup *popup =
+      wl_container_of(listener, popup, surface_commit);
+
+  popup_update_position(popup);
+  damage_popup(popup);
+}
+
+static void
+handle_popup_surface_map(struct wl_listener *listener, void *data)
+{
+  struct hikari_input_popup *popup =
+      wl_container_of(listener, popup, surface_map);
+
+  popup->mapped = true;
+  popup_update_position(popup);
+  damage_popup(popup);
+}
+
+static void
+handle_popup_surface_unmap(struct wl_listener *listener, void *data)
+{
+  struct hikari_input_popup *popup =
+      wl_container_of(listener, popup, surface_unmap);
+
+  damage_popup(popup);
+  popup->mapped = false;
+}
+
+static void
+handle_popup_destroy(struct wl_listener *listener, void *data)
+{
+  struct hikari_input_popup *popup =
+      wl_container_of(listener, popup, destroy);
+
+  damage_popup(popup);
+
+  wl_list_remove(&popup->destroy.link);
+  wl_list_remove(&popup->surface_commit.link);
+  wl_list_remove(&popup->surface_map.link);
+  wl_list_remove(&popup->surface_unmap.link);
+  wl_list_remove(&popup->link);
+  free(popup);
+}
+
+static void
+handle_im_new_popup(struct wl_listener *listener, void *data)
+{
+  struct hikari_input_method_relay *relay =
+      wl_container_of(listener, relay, input_method_new_popup);
+  struct wlr_input_popup_surface_v2 *wlr_popup = data;
+
+  fprintf(stderr, "[IM-RELAY] new popup surface created\n");
+
+  struct hikari_input_popup *popup = calloc(1, sizeof(*popup));
+  if (popup == NULL) {
+    return;
+  }
+
+  popup->popup = wlr_popup;
+  popup->relay = relay;
+  popup->mapped = false;
+
+  popup->destroy.notify = handle_popup_destroy;
+  wl_signal_add(&wlr_popup->events.destroy, &popup->destroy);
+
+  popup->surface_commit.notify = handle_popup_surface_commit;
+  wl_signal_add(&wlr_popup->surface->events.commit, &popup->surface_commit);
+
+  popup->surface_map.notify = handle_popup_surface_map;
+  wl_signal_add(&wlr_popup->surface->events.map, &popup->surface_map);
+
+  popup->surface_unmap.notify = handle_popup_surface_unmap;
+  wl_signal_add(&wlr_popup->surface->events.unmap, &popup->surface_unmap);
+
+  wl_list_insert(&relay->popups, &popup->link);
+
+  popup_update_position(popup);
+}
+
+static void
 handle_text_input_enable(struct wl_listener *listener, void *data)
 {
   struct hikari_text_input *text_input =
       wl_container_of(listener, text_input, enable);
   struct hikari_input_method_relay *relay = text_input->relay;
+
+  fprintf(stderr, "[IM-RELAY] text_input enable, im=%p\n", (void *)relay->input_method);
 
   if (relay->input_method == NULL) {
     return;
@@ -113,6 +252,8 @@ handle_new_text_input(struct wl_listener *listener, void *data)
   struct hikari_input_method_relay *relay =
       wl_container_of(listener, relay, new_text_input);
   struct wlr_text_input_v3 *wlr_text_input = data;
+
+  fprintf(stderr, "[IM-RELAY] new text_input created by client\n");
 
   struct hikari_text_input *text_input = calloc(1, sizeof(*text_input));
   if (text_input == NULL) {
@@ -177,9 +318,14 @@ handle_im_grab_keyboard(struct wl_listener *listener, void *data)
       wl_container_of(listener, relay, input_method_grab_keyboard);
   struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = data;
 
+  fprintf(stderr, "[IM-RELAY] keyboard grab requested\n");
+
   struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(hikari_server.seat);
   if (keyboard != NULL) {
+    fprintf(stderr, "[IM-RELAY] setting keyboard on grab\n");
     wlr_input_method_keyboard_grab_v2_set_keyboard(keyboard_grab, keyboard);
+  } else {
+    fprintf(stderr, "[IM-RELAY] WARNING: no keyboard available for grab\n");
   }
 }
 
@@ -191,6 +337,7 @@ handle_im_destroy(struct wl_listener *listener, void *data)
 
   wl_list_remove(&relay->input_method_commit.link);
   wl_list_remove(&relay->input_method_grab_keyboard.link);
+  wl_list_remove(&relay->input_method_new_popup.link);
   wl_list_remove(&relay->input_method_destroy.link);
   relay->input_method = NULL;
 }
@@ -202,7 +349,10 @@ handle_new_input_method(struct wl_listener *listener, void *data)
       wl_container_of(listener, relay, new_input_method);
   struct wlr_input_method_v2 *im = data;
 
+  fprintf(stderr, "[IM-RELAY] new input method connected\n");
+
   if (relay->input_method != NULL) {
+    fprintf(stderr, "[IM-RELAY] already have an input method, rejecting\n");
     wlr_input_method_v2_send_unavailable(im);
     return;
   }
@@ -214,6 +364,9 @@ handle_new_input_method(struct wl_listener *listener, void *data)
 
   relay->input_method_grab_keyboard.notify = handle_im_grab_keyboard;
   wl_signal_add(&im->events.grab_keyboard, &relay->input_method_grab_keyboard);
+
+  relay->input_method_new_popup.notify = handle_im_new_popup;
+  wl_signal_add(&im->events.new_popup_surface, &relay->input_method_new_popup);
 
   relay->input_method_destroy.notify = handle_im_destroy;
   wl_signal_add(&im->events.destroy, &relay->input_method_destroy);
@@ -265,6 +418,7 @@ hikari_input_method_relay_init(struct hikari_input_method_relay *relay,
     struct wlr_input_method_manager_v2 *input_method_manager)
 {
   wl_list_init(&relay->text_inputs);
+  wl_list_init(&relay->popups);
   relay->input_method = NULL;
 
   relay->new_text_input.notify = handle_new_text_input;

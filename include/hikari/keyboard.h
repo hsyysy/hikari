@@ -22,6 +22,8 @@ struct hikari_keyboard {
 
   struct xkb_keymap *keymap;
 
+  bool is_virtual;
+
   struct hikari_binding_group bindings[HIKARI_BINDING_GROUP_MASK];
 };
 

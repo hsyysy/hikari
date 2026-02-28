@@ -5,6 +5,7 @@
 
 #include <hikari/color.h>
 #include <hikari/geometry.h>
+#include <hikari/input_method_relay.h>
 #include <hikari/output.h>
 #include <hikari/renderer.h>
 #include <hikari/view.h>
@@ -17,6 +18,7 @@
 #include <wlr/backend.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/render/swapchain.h>
+#include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/region.h>
 
@@ -685,6 +687,20 @@ render_cycling_workspace(
 #endif
 }
 
+static inline void
+render_input_method_popups(struct hikari_renderer *renderer)
+{
+  struct hikari_input_popup *popup;
+  wl_list_for_each (popup, &hikari_server.input_method_relay.popups, link) {
+    if (!popup->mapped) {
+      continue;
+    }
+    renderer->geometry = &popup->geometry;
+    wlr_surface_for_each_surface(
+        popup->popup->surface, render_surface, renderer);
+  }
+}
+
 void
 hikari_renderer_normal_mode(struct hikari_renderer *renderer)
 {
@@ -710,6 +726,8 @@ hikari_renderer_normal_mode(struct hikari_renderer *renderer)
 #ifdef HAVE_LAYERSHELL
   render_overlay(renderer);
 #endif
+
+  render_input_method_popups(renderer);
 }
 
 void
