@@ -456,9 +456,9 @@ request_fullscreen_handler(struct wl_listener *listener, void *data)
   struct hikari_xdg_view *xdg_view =
       wl_container_of(listener, xdg_view, request_fullscreen);
 
-  struct wlr_xdg_toplevel_requested *event = data;
+  struct wlr_xdg_toplevel *toplevel = xdg_view->surface->toplevel;
 
-  wlr_xdg_toplevel_set_fullscreen(xdg_view->surface->toplevel, event->fullscreen);
+  wlr_xdg_toplevel_set_fullscreen(toplevel, toplevel->requested.fullscreen);
 }
 
 static void
