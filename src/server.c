@@ -47,6 +47,7 @@
 #include <wlr/xwayland.h>
 #endif
 
+#include <hikari/log.h>
 #include <hikari/border.h>
 #include <hikari/command.h>
 #include <hikari/configuration.h>
@@ -72,7 +73,7 @@
 static void
 add_pointer(struct hikari_server *server, struct wlr_input_device *device)
 {
-  fprintf(stderr, "[HIKARI-DBG] add_pointer: name='%s'\n", device->name);
+  hikari_log_debug("add_pointer: name='%s'", device->name);
 
   struct hikari_pointer *pointer = hikari_malloc(sizeof(struct hikari_pointer));
   hikari_pointer_init(pointer, device);
@@ -82,15 +83,15 @@ add_pointer(struct hikari_server *server, struct wlr_input_device *device)
           hikari_configuration, device->name);
 
   if (pointer_config != NULL) {
-    fprintf(stderr, "[HIKARI-DBG] add_pointer: found config for '%s'\n", device->name);
+    hikari_log_debug("add_pointer: found config for '%s'", device->name);
     hikari_pointer_configure(pointer, pointer_config);
   } else {
-    fprintf(stderr, "[HIKARI-DBG] add_pointer: no config for '%s'\n", device->name);
+    hikari_log_debug("add_pointer: no config for '%s'", device->name);
   }
 
   wlr_cursor_attach_input_device(server->cursor.wlr_cursor, device);
   wlr_cursor_map_input_to_output(server->cursor.wlr_cursor, device, NULL);
-  fprintf(stderr, "[HIKARI-DBG] add_pointer: device attached to cursor\n");
+  hikari_log_debug("add_pointer: device attached to cursor");
 }
 
 static void
@@ -132,26 +133,26 @@ static void
 add_input(struct hikari_server *server, struct wlr_input_device *device)
 {
 
-  fprintf(stderr, "[HIKARI-DBG] add_input: name='%s' type=%d\n", device->name, device->type);
+  hikari_log_debug("add_input: name='%s' type=%d", device->name, device->type);
 
   switch (device->type) {
     case WLR_INPUT_DEVICE_KEYBOARD:
-      fprintf(stderr, "[HIKARI-DBG] add_input: -> KEYBOARD\n");
+      hikari_log_debug("add_input: -> KEYBOARD");
       add_keyboard(server, device);
       break;
 
     case WLR_INPUT_DEVICE_POINTER:
-      fprintf(stderr, "[HIKARI-DBG] add_input: -> POINTER\n");
+      hikari_log_debug("add_input: -> POINTER");
       add_pointer(server, device);
       break;
 
     case WLR_INPUT_DEVICE_SWITCH:
-      fprintf(stderr, "[HIKARI-DBG] add_input: -> SWITCH\n");
+      hikari_log_debug("add_input: -> SWITCH");
       add_switch(server, device);
       break;
 
     default:
-      fprintf(stderr, "[HIKARI-DBG] add_input: -> IGNORED (type=%d)\n", device->type);
+      hikari_log_debug("add_input: -> IGNORED (type=%d)", device->type);
       break;
   }
 
@@ -842,7 +843,7 @@ drop_privileges(struct hikari_server *server)
   }
 
   if (geteuid() == 0 || getegid() == 0) {
-    fprintf(stderr, "running as root is prohibited\n");
+    hikari_log_error("running as root is prohibited");
     return false;
   }
 
@@ -857,19 +858,19 @@ hikari_server_prepare_privileged(void)
 
   server->display = wl_display_create();
   if (server->display == NULL) {
-    fprintf(stderr, "error: could not create display\n");
+    hikari_log_error("could not create display");
     goto done;
   }
 
   server->event_loop = wl_display_get_event_loop(server->display);
   if (server->event_loop == NULL) {
-    fprintf(stderr, "error: could not create event loop\n");
+    hikari_log_error("could not create event loop");
     goto done;
   }
 
   server->backend = wlr_backend_autocreate(server->event_loop, &server->session);
   if (server->backend == NULL) {
-    fprintf(stderr, "error: could not create backend\n");
+    hikari_log_error("could not create backend");
     goto done;
   }
 
@@ -969,13 +970,13 @@ server_init(struct hikari_server *server, char *config_path)
 
   server->compositor = wlr_compositor_create(server->display, 6, server->renderer);
   if (server->compositor == NULL) {
-    fprintf(stderr, "error: failed to create compositor\n");
+    hikari_log_error("failed to create compositor");
     wl_display_destroy(server->display);
     exit(EXIT_FAILURE);
   }
 
   if (wlr_subcompositor_create(server->display) == NULL) {
-    fprintf(stderr, "error: failed to create subcompositor\n");
+    hikari_log_error("failed to create subcompositor");
     wl_display_destroy(server->display);
     exit(EXIT_FAILURE);
   }
@@ -1053,7 +1054,7 @@ server_init(struct hikari_server *server, char *config_path)
 static void
 sig_handler(int signal)
 {
-  fprintf(stderr, "[HIKARI-QUIT] sig_handler called with signal %d\n", signal);
+  hikari_log_info("sig_handler called with signal %d", signal);
   hikari_server_terminate(NULL);
 }
 
@@ -1113,7 +1114,7 @@ destroy_shutdown_timer(struct hikari_server *server)
 void
 hikari_server_terminate(void *arg)
 {
-  fprintf(stderr, "[HIKARI-QUIT] hikari_server_terminate called\n");
+  hikari_log_info("hikari_server_terminate called");
 
   struct hikari_server *server = &hikari_server;
 

@@ -5,6 +5,7 @@
 #include <ucl.h>
 
 #include <hikari/geometry.h>
+#include <hikari/log.h>
 #include <hikari/memory.h>
 #include <hikari/output.h>
 #include <hikari/server.h>
@@ -171,16 +172,14 @@ parse_property(struct hikari_view_properties *properties,
     const char *group_name;
 
     if (!ucl_object_tostring_safe(property_obj, &group_name)) {
-      fprintf(stderr,
-          "configuration error: expected string for \"views\" "
-          "\"group\"\n");
+      hikari_log_error(
+          "configuration error: expected string for \"views\" \"group\"");
       goto done;
     }
 
     if (strlen(group_name) == 0) {
-      fprintf(stderr,
-          "configuration error: expected non-empty string for \"views\" "
-          "\"group\"\n");
+      hikari_log_error(
+          "configuration error: expected non-empty string for \"views\" \"group\"");
       goto done;
     }
 
@@ -189,9 +188,8 @@ parse_property(struct hikari_view_properties *properties,
   } else if (!strcmp(key, "sheet")) {
     int64_t sheet_nr;
     if (!ucl_object_toint_safe(property_obj, &sheet_nr)) {
-      fprintf(stderr,
-          "configuration error: expected integer for \"views\" "
-          "\"sheet\"\n");
+      hikari_log_error(
+          "configuration error: expected integer for \"views\" \"sheet\"");
       goto done;
     }
 
@@ -200,15 +198,14 @@ parse_property(struct hikari_view_properties *properties,
     const char *mark_name;
 
     if (!ucl_object_tostring_safe(property_obj, &mark_name)) {
-      fprintf(stderr,
+      hikari_log_error(
           "configuration error: expected string for \"views\" \"mark\"");
       goto done;
     }
 
     if (strlen(mark_name) != 1) {
-      fprintf(stderr,
-          "configuration error: invalid \"mark\" register \"%s\" for "
-          "\"views\"\n",
+      hikari_log_error(
+          "configuration error: invalid \"mark\" register \"%s\" for \"views\"",
           mark_name);
       goto done;
     }
@@ -222,9 +219,8 @@ parse_property(struct hikari_view_properties *properties,
     bool focus;
 
     if (!ucl_object_toboolean_safe(property_obj, &focus)) {
-      fprintf(stderr,
-          "configuration error: expected boolean for \"views\" "
-          "\"focus\"\n");
+      hikari_log_error(
+          "configuration error: expected boolean for \"views\" \"focus\"");
       goto done;
     }
 
@@ -233,9 +229,8 @@ parse_property(struct hikari_view_properties *properties,
     bool invisible;
 
     if (!ucl_object_toboolean_safe(property_obj, &invisible)) {
-      fprintf(stderr,
-          "configuration error: expected boolean for \"views\" "
-          "\"invisible\"\n");
+      hikari_log_error(
+          "configuration error: expected boolean for \"views\" \"invisible\"");
       goto done;
     }
 
@@ -244,9 +239,8 @@ parse_property(struct hikari_view_properties *properties,
     bool floating;
 
     if (!ucl_object_toboolean_safe(property_obj, &floating)) {
-      fprintf(stderr,
-          "configuration error: expected boolean for \"views\" "
-          "\"floating\"\n");
+      hikari_log_error(
+          "configuration error: expected boolean for \"views\" \"floating\"");
       goto done;
     }
 
@@ -255,15 +249,14 @@ parse_property(struct hikari_view_properties *properties,
     bool publicview;
 
     if (!ucl_object_toboolean_safe(property_obj, &publicview)) {
-      fprintf(stderr,
-          "configuration error: expected boolean for \"views\" "
-          "\"public\"\n");
+      hikari_log_error(
+          "configuration error: expected boolean for \"views\" \"public\"");
       goto done;
     }
 
     properties->publicview = publicview;
   } else {
-    fprintf(stderr, "configuration error: unkown \"views\" key \"%s\"\n", key);
+    hikari_log_error("configuration error: unkown \"views\" key \"%s\"", key);
     goto done;
   }
 

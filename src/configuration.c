@@ -36,6 +36,7 @@
 #include <hikari/view.h>
 #include <hikari/view_config.h>
 #include <hikari/workspace.h>
+#include <hikari/log.h>
 
 extern char **environ;
 
@@ -64,8 +65,7 @@ parse_layout_func(const char *layout_func_name,
     *explicit_nr_of_views = true;
     *layout_func = hikari_sheet_empty_layout;
   } else {
-    fprintf(stderr,
-        "configuration error: unknown container \"layout\" \"%s\"\n",
+    hikari_log_error("configuration error: unknown container \"layout\" \"%s\"",
         layout_func_name);
     return false;
   }
@@ -92,8 +92,7 @@ parse_container(
 
     if (!strcmp(key, "layout")) {
       if (!ucl_object_tostring_safe(cur, &layout_func_name)) {
-        fprintf(stderr,
-            "configuration error: expected string for container \"layout\"\n");
+        hikari_log_error("configuration error: expected string for container \"layout\"");
         goto done;
       }
 
@@ -104,41 +103,33 @@ parse_container(
     } else if (!strcmp(key, "views")) {
       override_nr_of_views = true;
       if (explicit_nr_of_views) {
-        fprintf(stderr,
-            "configuration error: cannot set \"views\" for \"layout\" \"%s\" "
-            "container\n",
+        hikari_log_error("configuration error: cannot set \"views\" for \"layout\" \"%s\" container",
             layout_func_name);
         goto done;
       }
 
       if (!ucl_object_toint_safe(cur, &views)) {
-        fprintf(stderr,
-            "configuration error: expected integer for container \"views\"\n");
+        hikari_log_error("configuration error: expected integer for container \"views\"");
         goto done;
       }
 
       if (views < 2 || views > 256) {
-        fprintf(stderr,
-            "configuration error: expected integer between 2 and 256 for "
-            "container \"views\"\n");
+        hikari_log_error("configuration error: expected integer between 2 and 256 for container \"views\"");
         goto done;
       }
     } else {
-      fprintf(
-          stderr, "configuration error: unknown container key \"%s\"\n", key);
+      hikari_log_error("configuration error: unknown container key \"%s\"", key);
       goto done;
     }
   }
 
   if (layout_func == NULL) {
-    fprintf(stderr, "configuration error: container expects \"layout\"\n");
+    hikari_log_error("configuration error: container expects \"layout\"");
     goto done;
   }
 
   if (override_nr_of_views && explicit_nr_of_views) {
-    fprintf(stderr,
-        "configuration error: cannot set \"views\" for \"layout\" \"%s\" "
-        "container\n",
+    hikari_log_error("configuration error: cannot set \"views\" for \"layout\" \"%s\" container",
         layout_func_name);
     goto done;
   }
@@ -208,8 +199,7 @@ parse_split(const ucl_object_t *split_obj, struct hikari_split **split)
     int64_t views = 256;
     bool explicit_nr_of_views = false;
     if (!ucl_object_tostring_safe(split_obj, &layout_func_name)) {
-      fprintf(stderr,
-          "configuration error: expected string for container layout\n");
+      hikari_log_error("configuration error: expected string for container layout");
       goto done;
     }
 
@@ -231,29 +221,25 @@ parse_split(const ucl_object_t *split_obj, struct hikari_split **split)
 
     if (split_is_vertical(top, bottom, left, right, layout)) {
       if (!parse_vertical(split_obj, &ret)) {
-        fprintf(
-            stderr, "configuration error: failed to parse vertical split\n");
+        hikari_log_error("configuration error: failed to parse vertical split");
         goto done;
       }
     } else if (split_is_horizontal(top, bottom, left, right, layout)) {
       if (!parse_horizontal(split_obj, &ret)) {
-        fprintf(
-            stderr, "configuration error: failed to parse horizontal split\n");
+        hikari_log_error("configuration error: failed to parse horizontal split");
         goto done;
       }
     } else if (split_is_container(top, bottom, left, right, layout)) {
       if (!parse_container(split_obj, &ret)) {
-        fprintf(stderr, "configuration error: failed to parse container\n");
+        hikari_log_error("configuration error: failed to parse container");
         goto done;
       }
     } else {
-      fprintf(
-          stderr, "configuration error: failed to determine layout element\n");
+      hikari_log_error("configuration error: failed to determine layout element");
       goto done;
     }
   } else {
-    fprintf(stderr,
-        "configuration error: expected string or object for layout element\n");
+    hikari_log_error("configuration error: expected string or object for layout element");
     goto done;
   }
 
@@ -273,15 +259,12 @@ parse_scale_value(
   double ret;
 
   if (!ucl_object_todouble_safe(scale_value_obj, &ret)) {
-    fprintf(stderr, "configuration error: expected float for \"%s\"\n", name);
+    hikari_log_error("configuration error: expected float for \"%s\"", name);
     goto done;
   }
 
   if (ret < hikari_split_scale_min || ret > hikari_split_scale_max) {
-    fprintf(stderr,
-        "configuration error: \"%s\" of \"%.2f\" is not between \"0.1\" "
-        "and "
-        "\"0.9\"\n",
+    hikari_log_error("configuration error: \"%s\" of \"%.2f\" is not between \"0.1\" and \"0.9\"",
         name,
         ret);
     goto done;
@@ -390,9 +373,9 @@ done:
         }                                                                      \
       } else if (!strcmp(key, #first)) {                                       \
         if (!parse_split(cur, &first)) {                                       \
-          fprintf(stderr,                                                      \
+          hikari_log_error(                                                     \
               "configuration error: invalid \"" #first "\" for \"" #name       \
-              "\" split\n");                                                   \
+              "\" split");                                                     \
           goto done;                                                           \
         }                                                                      \
                                                                                \
@@ -405,9 +388,9 @@ done:
           if (first != NULL) {                                                 \
             hikari_split_free(first);                                          \
           }                                                                    \
-          fprintf(stderr,                                                      \
+          hikari_log_error(                                                     \
               "configuration error: invalid \"" #second "\" for \"" #name      \
-              "\" split\n");                                                   \
+              "\" split");                                                     \
           goto done;                                                           \
         }                                                                      \
                                                                                \
@@ -416,25 +399,25 @@ done:
           found_orientation = true;                                            \
         }                                                                      \
       } else {                                                                 \
-        fprintf(stderr,                                                        \
-            "configuration error: unknown \"" #name "\" key \"%s\"\n",         \
+        hikari_log_error(                                                       \
+            "configuration error: unknown \"" #name "\" key \"%s\"",           \
             key);                                                              \
         goto done;                                                             \
       }                                                                        \
     }                                                                          \
                                                                                \
     if (first == NULL) {                                                       \
-      fprintf(stderr,                                                          \
+      hikari_log_error(                                                         \
           "configuration error: missing \"" #first "\" for \"" #name           \
-          "\" split\n");                                                       \
+          "\" split");                                                         \
       goto done;                                                               \
     }                                                                          \
                                                                                \
     if (second == NULL) {                                                      \
       hikari_split_free(first);                                                \
-      fprintf(stderr,                                                          \
+      hikari_log_error(                                                         \
           "configuration error: missing \"" #second "\" for " #name            \
-          " split\n");                                                         \
+          " split");                                                           \
       goto done;                                                               \
     }                                                                          \
                                                                                \
@@ -488,7 +471,7 @@ copy_in_config_string(const ucl_object_t *obj)
 
     return ret;
   } else {
-    fprintf(stderr, "configuration error: expected string\n");
+    hikari_log_error("configuration error: expected string");
     return NULL;
   }
 }
@@ -508,78 +491,69 @@ parse_colorscheme(struct hikari_configuration *configuration,
 
     if (!strcmp("selected", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->indicator_selected, color);
     } else if (!strcmp("grouped", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->indicator_grouped, color);
     } else if (!strcmp("first", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->indicator_first, color);
     } else if (!strcmp("conflict", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->indicator_conflict, color);
     } else if (!strcmp("insert", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->indicator_insert, color);
     } else if (!strcmp("active", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->border_active, color);
     } else if (!strcmp("inactive", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->border_inactive, color);
     } else if (!strcmp("foreground", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->foreground, color);
     } else if (!strcmp("background", key)) {
       if (!ucl_object_toint_safe(cur, &color)) {
-        fprintf(
-            stderr, "configuration error: expected integer for \"%s\"\n", key);
+        hikari_log_error("configuration error: expected integer for \"%s\"", key);
         goto done;
       }
 
       hikari_color_convert(configuration->clear, color);
     } else {
-      fprintf(stderr, "configuration error: unknown color key \"%s\"\n", key);
+      hikari_log_error("configuration error: unknown color key \"%s\"", key);
       goto done;
     }
   }
@@ -607,8 +581,7 @@ parse_execute(
     struct hikari_exec *execute = NULL;
 
     if (strlen(key) != 1 || !(key[0] >= 'a' && key[0] <= 'z')) {
-      fprintf(stderr,
-          "configuration error: invalid \"marks\" register \"%s\"\n",
+      hikari_log_error("configuration error: invalid \"marks\" register \"%s\"",
           key);
       goto done;
     } else {
@@ -623,9 +596,7 @@ parse_execute(
     if (command != NULL) {
       execute->command = command;
     } else {
-      fprintf(stderr,
-          "configuration error: invalid command for \"marks\" "
-          "register \"%c\"\n",
+      hikari_log_error("configuration error: invalid command for \"marks\" register \"%c\"",
           key[0]);
       goto done;
     }
@@ -662,8 +633,7 @@ parse_view_configs(
     strcpy(view_config->app_id, key);
 
     if (!hikari_view_config_parse(view_config, cur)) {
-      fprintf(stderr,
-          "configuration error: failed to parse \"views\" \"%s\"\n",
+      hikari_log_error("configuration error: failed to parse \"views\" \"%s\"",
           key);
       goto done;
     }
@@ -697,7 +667,7 @@ parse_mouse_button(const char *str, uint32_t *keycode)
   } else if (!strcmp(str, "task")) {
     *keycode = BTN_TASK;
   } else {
-    fprintf(stderr, "configuration error: unknown mouse button \"%s\"\n", str);
+    hikari_log_error("configuration error: unknown mouse button \"%s\"", str);
     return false;
   }
 
@@ -710,8 +680,7 @@ parse_action(const char *action_name,
     const char **command)
 {
   if (!ucl_object_tostring_safe(action_obj, command)) {
-    fprintf(stderr,
-        "configuration error: expected string for \"action\" command\n");
+    hikari_log_error("configuration error: expected string for \"action\" command");
     return false;
   }
 
@@ -757,8 +726,7 @@ parse_layout(char layout_register,
   struct hikari_split *ret = NULL;
 
   if (!parse_split(layout_obj, &ret)) {
-    fprintf(stderr,
-        "configuration error: failed to parse layout for register \"%c\"\n",
+    hikari_log_error("configuration error: failed to parse layout for register \"%c\"",
         layout_register);
     return false;
   }
@@ -783,7 +751,7 @@ parse_layouts(
 
     if (strlen(key) > 1 ||
         !((key[0] >= 'a' && key[0] <= 'z') || isdigit(key[0]))) {
-      fprintf(stderr, "configuration error: expected layout register name\n");
+      hikari_log_error("configuration error: expected layout register name");
       goto done;
     }
 
@@ -948,8 +916,7 @@ parse_bindings(struct hikari_configuration *configuration,
         goto done;
       }
     } else {
-      fprintf(stderr,
-          "configuration error: unexpected \"bindings\" section \"%s\"\n",
+      hikari_log_error("configuration error: unexpected \"bindings\" section \"%s\"",
           key);
       goto done;
     }
@@ -978,15 +945,13 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     if (!strcmp(key, "accel")) {
       double accel;
       if (!ucl_object_todouble_safe(cur, &accel)) {
-        fprintf(stderr,
-            "configuration error: expected float for \"%s\" \"accel\"\n",
+        hikari_log_error("configuration error: expected float for \"%s\" \"accel\"",
             pointer_name);
         goto done;
       }
 
       if (accel < -1.0 || accel > 1.0) {
-        fprintf(
-            stderr, "configuration error: expected float between -1 and 1\n");
+        hikari_log_error("configuration error: expected float between -1 and 1");
         goto done;
       }
 
@@ -994,9 +959,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     } else if (!strcmp(key, "accel-profile")) {
       const char *accel_profile;
       if (!ucl_object_tostring_safe(cur, &accel_profile)) {
-        fprintf(stderr,
-            "configuration error: expected string \"%s\" for "
-            "\"accel-profile\"\n",
+        hikari_log_error("configuration error: expected string \"%s\" for \"accel-profile\"",
             pointer_name);
         goto done;
       }
@@ -1011,8 +974,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
         hikari_pointer_config_set_accel_profile(
             pointer_config, LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE);
       } else {
-        fprintf(stderr,
-            "configuration error: unkown \"accel-profile\" \"%s\" for \"%s\"\n",
+        hikari_log_error("configuration error: unkown \"accel-profile\" \"%s\" for \"%s\"",
             accel_profile,
             pointer_name);
         goto done;
@@ -1020,9 +982,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     } else if (!strcmp(key, "scroll-method")) {
       const char *scroll_method;
       if (!ucl_object_tostring_safe(cur, &scroll_method)) {
-        fprintf(stderr,
-            "configuration error: expected string \"%s\" for "
-            "\"scroll-method\"\n",
+        hikari_log_error("configuration error: expected string \"%s\" for \"scroll-method\"",
             pointer_name);
         goto done;
       }
@@ -1034,8 +994,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
         hikari_pointer_config_set_scroll_method(
             pointer_config, LIBINPUT_CONFIG_SCROLL_NO_SCROLL);
       } else {
-        fprintf(stderr,
-            "configuration error: unkown \"scroll-method\" \"%s\" for \"%s\"\n",
+        hikari_log_error("configuration error: unkown \"scroll-method\" \"%s\" for \"%s\"",
             scroll_method,
             pointer_name);
         goto done;
@@ -1044,14 +1003,12 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
       const char *scroll_button;
       uint32_t scroll_button_keycode;
       if (!ucl_object_tostring_safe(cur, &scroll_button)) {
-        fprintf(stderr,
-            "configuration error: expected string for \"scroll-button\"\n");
+        hikari_log_error("configuration error: expected string for \"scroll-button\"");
         goto done;
       }
 
       if (!parse_mouse_button(scroll_button, &scroll_button_keycode)) {
-        fprintf(
-            stderr, "configuration error: failed to parse \"scroll-button\"\n");
+        hikari_log_error("configuration error: failed to parse \"scroll-button\"");
         goto done;
       }
 
@@ -1060,9 +1017,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     } else if (!strcmp(key, "disable-while-typing")) {
       bool disable_while_typing;
       if (!ucl_object_toboolean_safe(cur, &disable_while_typing)) {
-        fprintf(stderr,
-            "configuration error: expected boolean for "
-            "\"disable-while-typing\"\n");
+        hikari_log_error("configuration error: expected boolean for \"disable-while-typing\"");
         goto done;
       }
 
@@ -1076,9 +1031,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     } else if (!strcmp(key, "tap")) {
       bool tap;
       if (!ucl_object_toboolean_safe(cur, &tap)) {
-        fprintf(stderr,
-            "configuration error: expected boolean for "
-            "\"tap\"\n");
+        hikari_log_error("configuration error: expected boolean for \"tap\"");
         goto done;
       }
 
@@ -1092,9 +1045,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     } else if (!strcmp(key, "tap-drag")) {
       bool tap_drag;
       if (!ucl_object_toboolean_safe(cur, &tap_drag)) {
-        fprintf(stderr,
-            "configuration error: expected boolean for "
-            "\"tap-drag\"\n");
+        hikari_log_error("configuration error: expected boolean for \"tap-drag\"");
         goto done;
       }
 
@@ -1108,9 +1059,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     } else if (!strcmp(key, "tap-drag-lock")) {
       bool tap_drag_lock;
       if (!ucl_object_toboolean_safe(cur, &tap_drag_lock)) {
-        fprintf(stderr,
-            "configuration error: expected boolean for "
-            "\"tap-drag-lock\"\n");
+        hikari_log_error("configuration error: expected boolean for \"tap-drag-lock\"");
         goto done;
       }
 
@@ -1124,9 +1073,7 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     } else if (!strcmp(key, "middle-emulation")) {
       bool middle_emulation;
       if (!ucl_object_toboolean_safe(cur, &middle_emulation)) {
-        fprintf(stderr,
-            "configuration error: expected boolean for "
-            "\"middle-emulation\"\n");
+        hikari_log_error("configuration error: expected boolean for \"middle-emulation\"");
         goto done;
       }
 
@@ -1140,19 +1087,14 @@ parse_pointer_config(struct hikari_pointer_config *pointer_config,
     } else if (!strcmp(key, "natural-scrolling")) {
       bool natural_scrolling;
       if (!ucl_object_toboolean_safe(cur, &natural_scrolling)) {
-        fprintf(stderr,
-            "configuration error: expected boolean for "
-            "\"natural-scrolling\"\n");
+        hikari_log_error("configuration error: expected boolean for \"natural-scrolling\"");
         goto done;
       }
 
       hikari_pointer_config_set_natural_scrolling(
           pointer_config, natural_scrolling);
     } else {
-      fprintf(stderr,
-          "configuration error: unknown \"pointer\" configuration key \"%s\" "
-          "for "
-          "\"%s\"\n",
+      hikari_log_error("configuration error: unknown \"pointer\" configuration key \"%s\" for \"%s\"",
           key,
           pointer_name);
       goto done;
@@ -1309,8 +1251,7 @@ parse_inputs(
         goto done;
       }
     } else {
-      fprintf(stderr,
-          "configuration error: unknown \"inputs\" configuration key \"%s\"",
+      hikari_log_error("configuration error: unknown \"inputs\" configuration key \"%s\"",
           key);
       goto done;
     }
@@ -1343,9 +1284,7 @@ parse_background(const ucl_object_t *background_obj,
     } else if (!strcmp(key, "fit")) {
       const char *fit_value;
       if (!ucl_object_tostring_safe(cur, &fit_value)) {
-        fprintf(stderr,
-            "configuration error: expected string for \"background\" "
-            "\"fit\"\n");
+        hikari_log_error("configuration error: expected string for \"background\" \"fit\"");
         goto done;
       }
       if (!strcmp(fit_value, "center")) {
@@ -1355,23 +1294,19 @@ parse_background(const ucl_object_t *background_obj,
       } else if (!strcmp(fit_value, "tile")) {
         *fit = HIKARI_BACKGROUND_TILE;
       } else {
-        fprintf(stderr,
-            "configuration error: unexpected \"background\" \"fit\" \"%s\"\n",
+        hikari_log_error("configuration error: unexpected \"background\" \"fit\" \"%s\"",
             fit_value);
         goto done;
       }
     } else {
-      fprintf(stderr,
-          "configuration error: unknown \"background\" configuration key "
-          "\"%s\"\n",
+      hikari_log_error("configuration error: unknown \"background\" configuration key \"%s\"",
           key);
       goto done;
     }
   }
 
   if (!has_background) {
-    fprintf(
-        stderr, "configuration error: missing \"path\" for \"background\"\n");
+    hikari_log_error("configuration error: missing \"path\" for \"background\"");
     goto done;
   }
 
@@ -1402,8 +1337,7 @@ parse_output_config(struct hikari_output_config *output_config,
         char *background = copy_in_config_string(cur);
 
         if (background == NULL) {
-          fprintf(
-              stderr, "configuration error: invalid \"background\" value\n");
+          hikari_log_error("configuration error: invalid \"background\" value");
           goto done;
         }
 
@@ -1419,23 +1353,19 @@ parse_output_config(struct hikari_output_config *output_config,
         hikari_output_config_set_background(output_config, background);
         hikari_output_config_set_background_fit(output_config, background_fit);
       } else {
-        fprintf(stderr,
-            "configuration error: expected string or object for "
-            "\"background\"\n");
+        hikari_log_error("configuration error: expected string or object for \"background\"");
         goto done;
       }
     } else if (!strcmp(key, "position")) {
       struct hikari_position_config position;
       if (!hikari_position_config_absolute_parse(&position, cur)) {
-        fprintf(stderr,
-            "configuration error: could not parse \"output\" \"position\"");
+        hikari_log_error("configuration error: could not parse \"output\" \"position\"");
         goto done;
       }
 
       hikari_output_config_set_position(output_config, position);
     } else {
-      fprintf(stderr,
-          "configuration error: unknown \"outputs\" configuration key \"%s\"\n",
+      hikari_log_error("configuration error: unknown \"outputs\" configuration key \"%s\"",
           key);
     }
   }
@@ -1467,8 +1397,7 @@ parse_outputs(
     wl_list_insert(&configuration->output_configs, &output_config->link);
 
     if (!parse_output_config(output_config, cur)) {
-      fprintf(stderr,
-          "configuration error: failed to parse \"outputs\" configuration\n");
+      hikari_log_error("configuration error: failed to parse \"outputs\" configuration");
       goto done;
     }
   }
@@ -1499,7 +1428,7 @@ parse_border(
   int64_t border;
 
   if (!ucl_object_toint_safe(border_obj, &border)) {
-    fprintf(stderr, "configuration error: expected integer for \"border\"\n");
+    hikari_log_error("configuration error: expected integer for \"border\"");
     return false;
   }
 
@@ -1515,7 +1444,7 @@ parse_gap(
   int64_t gap;
 
   if (!ucl_object_toint_safe(gap_obj, &gap)) {
-    fprintf(stderr, "configuration error: expected integer for \"gap\"\n");
+    hikari_log_error("configuration error: expected integer for \"gap\"");
     return false;
   }
 
@@ -1531,7 +1460,7 @@ parse_step(
   int64_t step;
 
   if (!ucl_object_toint_safe(step_obj, &step)) {
-    fprintf(stderr, "configuration error: expected integer for \"step\"\n");
+    hikari_log_error("configuration error: expected integer for \"step\"");
     return false;
   }
 
@@ -1547,7 +1476,7 @@ parse_font(
   const char *font;
 
   if (!ucl_object_tostring_safe(font_obj, &font)) {
-    fprintf(stderr, "configuration error: expected string for \"font\"\n");
+    hikari_log_error("configuration error: expected string for \"font\"");
     return false;
   }
 
@@ -1610,7 +1539,7 @@ set_env_vars(struct ucl_parser *parser)
     const size_t name_length = separator - *current_var;
     char *name = hikari_malloc(name_length + 1);
     if (name == NULL) {
-      fprintf(stderr, "Could not allocate enough memory :(\n");
+      hikari_log_error("Could not allocate enough memory :(");
       return false;
     }
     strncpy(name, *current_var, name_length);
@@ -1639,7 +1568,7 @@ hikari_configuration_load(
 
   if (configuration_obj == NULL) {
     const char *error = ucl_parser_get_error(parser);
-    fprintf(stderr, "%s\n", error);
+    hikari_log_error("%s", error);
     ucl_parser_free(parser);
     return false;
   }
@@ -1649,14 +1578,14 @@ hikari_configuration_load(
   const ucl_object_t *actions_obj =
       ucl_object_lookup(configuration_obj, "actions");
   if (actions_obj != NULL && !parse_actions(configuration, actions_obj)) {
-    fprintf(stderr, "configuration error: failed to parse \"actions\"\n");
+    hikari_log_error("configuration error: failed to parse \"actions\"");
     goto done;
   }
 
   const ucl_object_t *layouts_obj =
       ucl_object_lookup(configuration_obj, "layouts");
   if (layouts_obj != NULL && !parse_layouts(configuration, layouts_obj)) {
-    fprintf(stderr, "configuration error: failed to parse \"layouts\"\n");
+    hikari_log_error("configuration error: failed to parse \"layouts\"");
     goto done;
   }
 
@@ -1688,8 +1617,7 @@ hikari_configuration_load(
         goto done;
       }
     } else if (!!strcmp(key, "actions") && !!strcmp(key, "layouts")) {
-      fprintf(stderr,
-          "configuration error: unkown configuration section \"%s\"\n",
+      hikari_log_error("configuration error: unkown configuration section \"%s\"",
           key);
       goto done;
     }

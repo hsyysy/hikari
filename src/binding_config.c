@@ -9,6 +9,8 @@
 
 #include <wlr/types/wlr_keyboard.h>
 
+#include <hikari/log.h>
+
 static bool
 parse_modifier_mask(const char *str, uint8_t *result, const char **remaining)
 {
@@ -33,8 +35,8 @@ parse_modifier_mask(const char *str, uint8_t *result, const char **remaining)
     } else if (c == '0') {
       // do nothing
     } else {
-      fprintf(stderr,
-          "configuration error: unknown modifier \"%c\" in \"%s\"\n",
+      hikari_log_error(
+          "configuration error: unknown modifier \"%c\" in \"%s\"",
           c,
           str);
       return false;
@@ -64,8 +66,8 @@ hikari_binding_config_key_parse(
     errno = 0;
     const long value = strtol(remaining + 1, NULL, 10);
     if (errno != 0 || value < 0 || value > UINT32_MAX) {
-      fprintf(stderr,
-          "configuration error: failed to parse keycode \"%s\"\n",
+      hikari_log_error(
+          "configuration error: failed to parse keycode \"%s\"",
           remaining + 1);
       goto done;
     }
@@ -76,8 +78,8 @@ hikari_binding_config_key_parse(
     xkb_keysym_t value =
         xkb_keysym_from_name(remaining + 1, XKB_KEYSYM_CASE_INSENSITIVE);
     if (value == XKB_KEY_NoSymbol) {
-      fprintf(stderr,
-          "configuration error: unknown key symbol \"%s\"\n",
+      hikari_log_error(
+          "configuration error: unknown key symbol \"%s\"",
           remaining + 1);
       goto done;
     }
@@ -128,8 +130,8 @@ hikari_binding_config_button_parse(
     } else if (!strcmp(remaining, "task")) {
       binding_key->value.keycode = BTN_TASK;
     } else {
-      fprintf(stderr,
-          "configuration error: unknown mouse button \"%s\"\n",
+      hikari_log_error(
+          "configuration error: unknown mouse button \"%s\"",
           remaining);
       goto done;
     }
@@ -141,8 +143,8 @@ hikari_binding_config_button_parse(
     errno = 0;
     const long value = strtol(remaining, NULL, 10);
     if (errno != 0 || value < 0 || value > UINT32_MAX) {
-      fprintf(stderr,
-          "configuration error: failed to parse mouse binding \"%s\"\n",
+      hikari_log_error(
+          "configuration error: failed to parse mouse binding \"%s\"",
           remaining);
       goto done;
     }

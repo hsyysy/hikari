@@ -3,8 +3,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <wlr/util/log.h>
-
+#include <hikari/log.h>
 #include <hikari/server.h>
 
 #include "version.h"
@@ -189,14 +188,14 @@ parse_options(int argc, char **argv, struct options *options)
 int
 main(int argc, char **argv)
 {
-  wlr_log_init(WLR_DEBUG, NULL);
+  hikari_log_init(HIKARI_LOG_DEBUG);
   struct options options;
   parse_options(argc, argv, &options);
 
   if (options.config_path == NULL) {
     free(options.autostart);
 
-    fprintf(stderr, "could not load configuration\n");
+    hikari_log_error("could not load configuration");
 
     return EXIT_FAILURE;
   } else {

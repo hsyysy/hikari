@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include <hikari/log.h>
+
 void
 hikari_position_config_init(struct hikari_position_config *position_config)
 {
@@ -63,7 +65,7 @@ hikari_position_config_relative_parse(
     relative_config = HIKARI_POSITION_CONFIG_RELATIVE_TOP_RIGHT;
     success = true;
   } else {
-    fprintf(stderr, "configuration error: failed to parse \"position\"\n");
+    hikari_log_error("configuration error: failed to parse \"position\"");
   }
 
   if (success) {
@@ -90,37 +92,37 @@ parse_position(const ucl_object_t *position_obj, int *x, int *y)
 
     if (!strcmp(key, "x")) {
       if (!ucl_object_toint_safe(cur, &ret_x)) {
-        fprintf(stderr,
-            "configuration error: expected integer for \"x\"-coordinate\n");
+        hikari_log_error(
+            "configuration error: expected integer for \"x\"-coordinate");
         goto done;
       }
 
       parsed_x = true;
     } else if (!strcmp(key, "y")) {
       if (!ucl_object_toint_safe(cur, &ret_y)) {
-        fprintf(stderr,
-            "configuration error: expected integer for \"y\"-coordinate\n");
+        hikari_log_error(
+            "configuration error: expected integer for \"y\"-coordinate");
         goto done;
       }
 
       parsed_y = true;
     } else {
-      fprintf(stderr,
-          "configuration error: unknown \"position\" key \"%s\"\n",
+      hikari_log_error(
+          "configuration error: unknown \"position\" key \"%s\"",
           key);
       goto done;
     }
   }
 
   if (!parsed_x) {
-    fprintf(stderr,
-        "configuration error: missing \"x\"-coordinate in \"position\2\n");
+    hikari_log_error(
+        "configuration error: missing \"x\"-coordinate in \"position\"");
     goto done;
   }
 
   if (!parsed_y) {
-    fprintf(stderr,
-        "configuration error: missing \"y\"-coordinate in \"position\"\n");
+    hikari_log_error(
+        "configuration error: missing \"y\"-coordinate in \"position\"");
     goto done;
   }
 
@@ -145,7 +147,7 @@ hikari_position_config_absolute_parse(
   bool success = false;
 
   if (!parse_position(position_config_obj, &x, &y)) {
-    fprintf(stderr, "configuration error: failed to parse \"position\"\n");
+    hikari_log_error("configuration error: failed to parse \"position\"");
     goto done;
   }
 
@@ -182,8 +184,8 @@ hikari_position_config_parse(struct hikari_position_config *position_config,
       break;
 
     default:
-      fprintf(stderr,
-          "configuration error: expected string or object for \"position\"\n");
+      hikari_log_error(
+          "configuration error: expected string or object for \"position\"");
       goto done;
   }
 

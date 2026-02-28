@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <hikari/log.h>
+
 #define HIKARI_KEYBOARD_CONFIG_DEFAULT_REPEAT_RATE 25
 #define HIKARI_KEYBOARD_CONFIG_DEFAULT_REPEAT_DELAY 600
 
@@ -30,7 +32,7 @@ parse_xkb_rules(
     if (!strcmp("rules", key)) {
       const char *rules;
       if (!ucl_object_tostring_safe(cur, &rules)) {
-        fprintf(stderr, "configuration error: expected string for \"rules\"\n");
+        hikari_log_error("configuration error: expected string for \"rules\"");
         goto done;
       }
 
@@ -38,7 +40,7 @@ parse_xkb_rules(
     } else if (!strcmp("model", key)) {
       const char *model;
       if (!ucl_object_tostring_safe(cur, &model)) {
-        fprintf(stderr, "configuration error: expected string for \"model\"\n");
+        hikari_log_error("configuration error: expected string for \"model\"");
         goto done;
       }
 
@@ -46,8 +48,7 @@ parse_xkb_rules(
     } else if (!strcmp("layout", key)) {
       const char *layout;
       if (!ucl_object_tostring_safe(cur, &layout)) {
-        fprintf(
-            stderr, "configuration error: expected string for \"layout\"\n");
+        hikari_log_error("configuration error: expected string for \"layout\"");
         goto done;
       }
 
@@ -55,8 +56,7 @@ parse_xkb_rules(
     } else if (!strcmp("variant", key)) {
       const char *variant;
       if (!ucl_object_tostring_safe(cur, &variant)) {
-        fprintf(
-            stderr, "configuration error: expected string for \"variant\"\n");
+        hikari_log_error("configuration error: expected string for \"variant\"");
         goto done;
       }
 
@@ -64,14 +64,13 @@ parse_xkb_rules(
     } else if (!strcmp("options", key)) {
       const char *options;
       if (!ucl_object_tostring_safe(cur, &options)) {
-        fprintf(
-            stderr, "configuration error: expected string for \"options\"\n");
+        hikari_log_error("configuration error: expected string for \"options\"");
         goto done;
       }
 
       hikari_xkb_config_set_options(xkb_config, strdup(options));
     } else {
-      fprintf(stderr, "configuration error: invalid \"xkb\" key \"%s\"\n", key);
+      hikari_log_error("configuration error: invalid \"xkb\" key \"%s\"", key);
       goto done;
     }
   }
@@ -92,8 +91,8 @@ load_xkb_file(struct hikari_xkb *xkb, const char *xkb_file)
   FILE *keymap_file = fopen(xkb_file, "r");
 
   if (!keymap_file) {
-    fprintf(stderr,
-        "configuration error: failed to open \"xkb\" file \"%s\"\n",
+    hikari_log_error(
+        "configuration error: failed to open \"xkb\" file \"%s\"",
         xkb_file);
     goto done;
   }
@@ -137,7 +136,7 @@ hikari_keyboard_config_parse(struct hikari_keyboard_config *keyboard_config,
         keyboard_config->xkb.type = HIKARI_XKB_TYPE_RULES;
 
         if (!parse_xkb_rules(&keyboard_config->xkb.value.rules, cur)) {
-          fprintf(stderr, "configuration error: failed to parse xkb rules\n");
+          hikari_log_error("configuration error: failed to parse xkb rules");
           goto done;
         }
       } else if (type == UCL_STRING) {
@@ -147,16 +146,16 @@ hikari_keyboard_config_parse(struct hikari_keyboard_config *keyboard_config,
           goto done;
         }
       } else {
-        fprintf(stderr,
-            "configuration error: expected string or object for \"xkb\"\n");
+        hikari_log_error(
+            "configuration error: expected string or object for \"xkb\"");
         goto done;
       }
     } else if (!strcmp("repeat-rate", key)) {
       int64_t repeat_rate;
 
       if (!ucl_object_toint_safe(cur, &repeat_rate) || repeat_rate < 0) {
-        fprintf(stderr,
-            "configuration error: expected positive integer \"repeat-rate\"\n");
+        hikari_log_error(
+            "configuration error: expected positive integer \"repeat-rate\"");
         goto done;
       }
 
@@ -165,16 +164,15 @@ hikari_keyboard_config_parse(struct hikari_keyboard_config *keyboard_config,
       int64_t repeat_delay;
 
       if (!ucl_object_toint_safe(cur, &repeat_delay) || repeat_delay < 0) {
-        fprintf(stderr,
-            "configuration error: expected positive integer "
-            "\"repeat-delay\"\n");
+        hikari_log_error(
+            "configuration error: expected positive integer \"repeat-delay\"");
         goto done;
       }
 
       hikari_keyboard_config_set_repeat_delay(keyboard_config, repeat_delay);
     } else {
-      fprintf(stderr,
-          "configuration error: invalid \"keyboard\" key \"%s\"\n",
+      hikari_log_error(
+          "configuration error: invalid \"keyboard\" key \"%s\"",
           key);
       goto done;
     }

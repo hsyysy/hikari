@@ -10,6 +10,7 @@
 #include <hikari/configuration.h>
 #include <hikari/indicator.h>
 #include <hikari/indicator_frame.h>
+#include <hikari/log.h>
 #include <hikari/keyboard.h>
 #include <hikari/renderer.h>
 #include <hikari/server.h>
@@ -77,75 +78,62 @@ static void
 dump_debug(struct hikari_server *server)
 {
   struct hikari_view *view;
-  printf("---------------------------------------------------------------------"
-         "\n");
-  printf("VIEWS\n");
-  printf("---------------------------------------------------------------------"
-         "\n");
+  hikari_log_trace("---------------------------------------------------------------------");
+  hikari_log_trace("VIEWS");
+  hikari_log_trace("---------------------------------------------------------------------");
   wl_list_for_each (view, &hikari_server.visible_views, visible_server_views) {
-    printf("%p ", view);
+    hikari_log_trace("%p ", view);
   }
-  printf("\n");
-  printf("---------------------------------------------------------------------"
-         "\n");
-  printf("GROUPS\n");
-  printf("---------------------------------------------------------------------"
-         "\n");
+  hikari_log_trace("---------------------------------------------------------------------");
+  hikari_log_trace("GROUPS");
+  hikari_log_trace("---------------------------------------------------------------------");
   struct hikari_group *group;
   wl_list_for_each (group, &hikari_server.groups, server_groups) {
-    printf("%s ", group->name);
+    hikari_log_trace("%s ", group->name);
 
     wl_list_for_each (view, &group->visible_views, visible_group_views) {
-      printf("%p ", view);
+      hikari_log_trace("%p ", view);
     }
 
-    printf("/ ");
+    hikari_log_trace("/ ");
 
     wl_list_for_each (view, &group->views, group_views) {
-      printf("%p ", view);
+      hikari_log_trace("%p ", view);
     }
 
-    printf("\n");
+    hikari_log_trace("");
   }
-  printf("---------------------------------------------------------------------"
-         "\n");
+  hikari_log_trace("---------------------------------------------------------------------");
   struct hikari_output *output;
   wl_list_for_each (output, &hikari_server.outputs, server_outputs) {
     struct hikari_workspace *workspace = output->workspace;
     const char *output_name = workspace->output->wlr_output->name;
-    printf("SHEETS %s (%p)\n", output_name, workspace->focus_view);
-    printf(
-        "---------------------------------------------------------------------"
-        "\n");
+    hikari_log_trace("SHEETS %s (%p)", output_name, workspace->focus_view);
+    hikari_log_trace("---------------------------------------------------------------------");
     struct hikari_sheet *sheets = workspace->sheets;
     struct hikari_sheet *sheet;
     for (int i = 0; i < 10; i++) {
       sheet = &sheets[i];
       if (!wl_list_empty(&sheet->views)) {
-        printf("%d ", sheet->nr);
+        hikari_log_trace("%d ", sheet->nr);
         wl_list_for_each (view, &sheet->views, sheet_views) {
-          printf("%p ", view);
+          hikari_log_trace("%p ", view);
         }
-        printf("\n");
+        hikari_log_trace("");
       }
     }
-    printf(
-        "---------------------------------------------------------------------"
-        "\n");
+    hikari_log_trace("---------------------------------------------------------------------");
     if (workspace->sheet->layout != NULL) {
-      printf(
-          "-------------------------------------------------------------------"
-          "--\n");
-      printf("LAYOUT %s\n", output_name);
+      hikari_log_trace("---------------------------------------------------------------------");
+      hikari_log_trace("LAYOUT %s", output_name);
       struct hikari_tile *tile;
       wl_list_for_each (tile, &workspace->sheet->layout->tiles, layout_tiles) {
-        printf("%p ", tile->view);
+        hikari_log_trace("%p ", tile->view);
       }
-      printf("\n");
+      hikari_log_trace("");
     }
   }
-  printf("/////////////////////////////////////////////////////////////////////"
-         "\n");
+  hikari_log_trace("/////////////////////////////////////////////////////////////////////");
 }
 #endif
 
@@ -334,8 +322,7 @@ key_handler(
     struct hikari_binding_group *bindings = &keyboard->bindings[modifiers];
 
     if (handle_input(bindings, event->keycode)) {
-      fprintf(stderr, "[HIKARI-KEY] consumed: keycode=%u modifiers=0x%x\n",
-          event->keycode, modifiers);
+      hikari_log_debug("consumed: keycode=%u modifiers=0x%x", event->keycode, modifiers);
       return;
     }
   }
@@ -345,14 +332,11 @@ key_handler(
   struct wlr_input_method_v2 *im =
       hikari_server.input_method_relay.input_method;
   if (im != NULL && im->keyboard_grab != NULL && !keyboard->is_virtual) {
-    fprintf(stderr, "[HIKARI-KEY] forwarding to IM grab: keycode=%u state=%u\n",
-        event->keycode, event->state);
+    hikari_log_debug("forwarding to IM grab: keycode=%u state=%u", event->keycode, event->state);
     wlr_input_method_keyboard_grab_v2_send_key(
         im->keyboard_grab, event->time_msec, event->keycode, event->state);
   } else {
-    fprintf(stderr, "[HIKARI-KEY] forwarding to seat: keycode=%u state=%u im=%p grab=%p virt=%d\n",
-        event->keycode, event->state, (void *)im,
-        im ? (void *)im->keyboard_grab : NULL, keyboard->is_virtual);
+    hikari_log_debug("forwarding to seat: keycode=%u state=%u im=%p grab=%p virt=%d", event->keycode, event->state, (void *)im, im ? (void *)im->keyboard_grab : NULL, keyboard->is_virtual);
     wlr_seat_keyboard_notify_key(
         hikari_server.seat, event->time_msec, event->keycode, event->state);
   }

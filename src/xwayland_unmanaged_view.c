@@ -3,6 +3,7 @@
 
 #include <wlr/xwayland.h>
 
+#include <hikari/log.h>
 #include <hikari/memory.h>
 #include <hikari/output.h>
 #include <hikari/server.h>
@@ -58,12 +59,7 @@ map_handler(struct wl_listener *listener, void *data)
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, map);
 
-#if !defined(NDEBUG)
-  printf("UNMANAGED XWAYLAND MAP %p %d %d\n",
-      xwayland_unmanaged_view,
-      xwayland_unmanaged_view->surface->x,
-      xwayland_unmanaged_view->surface->y);
-#endif
+  hikari_log_trace("UNMANAGED XWAYLAND MAP %p %d %d", xwayland_unmanaged_view, xwayland_unmanaged_view->surface->x, xwayland_unmanaged_view->surface->y);
 
   struct wlr_box *geometry = &xwayland_unmanaged_view->geometry;
   struct wlr_xwayland_surface *xwayland_surface =
@@ -102,9 +98,7 @@ unmap_handler(struct wl_listener *listener, void *data)
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, unmap);
 
-#if !defined(NDEBUG)
-  printf("UNMANAGED XWAYLAND UNMAP %p\n", xwayland_unmanaged_view);
-#endif
+  hikari_log_trace("UNMANAGED XWAYLAND UNMAP %p", xwayland_unmanaged_view);
 
   unmap(xwayland_unmanaged_view);
 }
@@ -143,9 +137,7 @@ destroy_handler(struct wl_listener *listener, void *data)
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, destroy);
 
-#if !defined(NDEBUG)
-  printf("UNMANAGED XWAYLAND DESTROY %p\n", xwayland_unmanaged_view);
-#endif
+  hikari_log_trace("UNMANAGED XWAYLAND DESTROY %p", xwayland_unmanaged_view);
 
   if (!xwayland_unmanaged_view->hidden) {
     unmap(xwayland_unmanaged_view);
@@ -207,9 +199,7 @@ hikari_xwayland_unmanaged_view_init(
   xwayland_unmanaged_view->node.surface_at = surface_at;
   xwayland_unmanaged_view->node.focus = focus;
 
-#if !defined(NDEBUG)
-  printf("UNMANAGED XWAYLAND NEW %p\n", xwayland_unmanaged_view);
-#endif
+  hikari_log_trace("UNMANAGED XWAYLAND NEW %p", xwayland_unmanaged_view);
 
   wlr_xwayland_surface_ping(xwayland_surface);
 

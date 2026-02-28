@@ -48,6 +48,7 @@ OBJS = \
 	layout_select_mode.o \
 	lock_indicator.o \
 	lock_mode.o \
+	log.o \
 	main.o \
 	mark.o \
 	mark_assign_mode.o \

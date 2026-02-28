@@ -17,6 +17,7 @@
 #include <hikari/indicator_frame.h>
 #include <hikari/input_grab_mode.h>
 #include <hikari/layout.h>
+#include <hikari/log.h>
 #include <hikari/mark_assign_mode.h>
 #include <hikari/mark_select_mode.h>
 #include <hikari/normal_mode.h>
@@ -84,9 +85,7 @@ hikari_workspace_merge(
   assert(workspace != NULL);
   assert(into != NULL);
 
-#ifndef NDEBUG
-  printf("WORKSPACE MERGE %p INTO %p\n", workspace, into);
-#endif
+  hikari_log_trace("WORKSPACE MERGE %p INTO %p", workspace, into);
 
   for (int i = 0; i < HIKARI_NR_OF_SHEETS; i++) {
     struct hikari_sheet *from = &workspace->sheets[i];

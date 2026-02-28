@@ -15,6 +15,7 @@
 
 #include <hikari/configuration.h>
 #include <hikari/geometry.h>
+#include <hikari/log.h>
 #include <hikari/mark.h>
 #include <hikari/output.h>
 #include <hikari/server.h>
@@ -154,7 +155,7 @@ first_map(struct hikari_xdg_view *xdg_view, bool *focus)
   hikari_view_refresh_geometry(view, geometry);
 
   const char *app_id = get_app_id(xdg_view);
-  fprintf(stderr, "[HIKARI-DBG] first_map: app_id='%s' geometry=%dx%d+%d+%d\n",
+  hikari_log_debug("first_map: app_id='%s' geometry=%dx%d+%d+%d",
       app_id, geometry->width, geometry->height, geometry->x, geometry->y);
 
   struct hikari_view_config *view_config =
@@ -164,7 +165,7 @@ first_map(struct hikari_xdg_view *xdg_view, bool *focus)
 
   hikari_view_set_title(view, xdg_toplevel->title);
   hikari_view_configure(view, app_id, view_config);
-  fprintf(stderr, "[HIKARI-DBG] first_map: configured, sheet=%p output=%p\n",
+  hikari_log_debug("first_map: configured, sheet=%p output=%p",
       (void *)view->sheet, (void *)view->output);
 }
 
@@ -190,7 +191,7 @@ surface_at(
 static void
 map(struct hikari_view *view, bool focus)
 {
-  fprintf(stderr, "[HIKARI-DBG] xdg map: view=%p focus=%d\n", (void *)view, focus);
+  hikari_log_debug("xdg map: view=%p focus=%d", (void *)view, focus);
 
   struct hikari_xdg_view *xdg_view = (struct hikari_xdg_view *)view;
   struct wlr_xdg_surface *xdg_surface = xdg_view->surface;
@@ -217,7 +218,7 @@ map_handler(struct wl_listener *listener, void *data)
   struct hikari_view *view = (struct hikari_view *)xdg_view;
   bool focus = false;
 
-  fprintf(stderr, "[HIKARI-DBG] map_handler: view=%p unmanaged=%d sheet=%p\n",
+  hikari_log_debug("map_handler: view=%p unmanaged=%d sheet=%p",
       (void *)view, hikari_view_is_unmanaged(view), (void *)view->sheet);
 
   if (hikari_view_is_unmanaged(view)) {
@@ -230,9 +231,7 @@ map_handler(struct wl_listener *listener, void *data)
 static void
 unmap(struct hikari_view *view)
 {
-#if !defined(NDEBUG)
-  printf("XDG UNMAP %p\n", view);
-#endif
+  hikari_log_trace("XDG UNMAP %p", view);
 
   struct hikari_xdg_view *xdg_view = (struct hikari_xdg_view *)view;
 
@@ -327,9 +326,7 @@ for_each_surface(struct hikari_node *node,
 static void
 destroy_popup_handler(struct wl_listener *listener, void *data)
 {
-#if !defined(NDEBUG)
-  printf("DESTROY POPUP\n");
-#endif
+  hikari_log_trace("DESTROY POPUP");
   struct hikari_xdg_popup *popup = wl_container_of(listener, popup, destroy);
 
   hikari_view_child_fini(&popup->view_child);
@@ -370,9 +367,7 @@ new_popup_handler(struct wl_listener *listener, void *data)
 static void
 popup_map(struct wl_listener *listener, void *data)
 {
-#if !defined(NDEBUG)
-  printf("POPUP MAP\n");
-#endif
+  hikari_log_trace("POPUP MAP");
 
   struct hikari_xdg_popup *xdg_popup =
       wl_container_of(listener, xdg_popup, map);
@@ -385,9 +380,7 @@ popup_map(struct wl_listener *listener, void *data)
 static void
 popup_unmap(struct wl_listener *listener, void *data)
 {
-#if !defined(NDEBUG)
-  printf("POPUP UNMAP\n");
-#endif
+  hikari_log_trace("POPUP UNMAP");
 
   struct hikari_xdg_popup *xdg_popup =
       wl_container_of(listener, xdg_popup, unmap);
@@ -423,9 +416,7 @@ xdg_popup_create(struct wlr_xdg_popup *wlr_popup, struct hikari_view *parent)
   struct hikari_xdg_popup *popup =
       hikari_malloc(sizeof(struct hikari_xdg_popup));
 
-#if !defined(NDEBUG)
-  printf("CREATE POPUP\n");
-#endif
+  hikari_log_trace("CREATE POPUP");
 
   popup->view_child.parent = parent;
   popup->popup = wlr_popup;
@@ -490,9 +481,7 @@ hikari_xdg_view_init(struct hikari_xdg_view *xdg_view,
 
   hikari_view_init(&xdg_view->view, child, workspace);
 
-#if !defined(NDEBUG)
-  printf("NEW XDG %p\n", xdg_view);
-#endif
+  hikari_log_trace("NEW XDG %p", xdg_view);
 
   xdg_view->view.node.surface_at = surface_at;
 

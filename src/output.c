@@ -5,6 +5,7 @@
 #include <wlr/backend.h>
 
 #include <hikari/memory.h>
+#include <hikari/log.h>
 #include <hikari/renderer.h>
 #include <hikari/server.h>
 #ifdef HAVE_XWAYLAND
@@ -204,9 +205,7 @@ destroy_handler(struct wl_listener *listener, void *data)
 {
   struct hikari_output *output = wl_container_of(listener, output, destroy);
 
-#ifndef NDEBUG
-  printf("DESTORY OUTPUT %p\n", output);
-#endif
+  hikari_log_trace("DESTORY OUTPUT %p", output);
 
   hikari_output_fini(output);
   hikari_free(output);

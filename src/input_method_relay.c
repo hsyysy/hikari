@@ -7,6 +7,7 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_compositor.h>
 
+#include <hikari/log.h>
 #include <hikari/output.h>
 #include <hikari/server.h>
 #include <hikari/view.h>
@@ -154,7 +155,7 @@ handle_im_new_popup(struct wl_listener *listener, void *data)
       wl_container_of(listener, relay, input_method_new_popup);
   struct wlr_input_popup_surface_v2 *wlr_popup = data;
 
-  fprintf(stderr, "[IM-RELAY] new popup surface created\n");
+  hikari_log_debug("new popup surface created");
 
   struct hikari_input_popup *popup = calloc(1, sizeof(*popup));
   if (popup == NULL) {
@@ -189,7 +190,7 @@ handle_text_input_enable(struct wl_listener *listener, void *data)
       wl_container_of(listener, text_input, enable);
   struct hikari_input_method_relay *relay = text_input->relay;
 
-  fprintf(stderr, "[IM-RELAY] text_input enable, im=%p\n", (void *)relay->input_method);
+  hikari_log_debug("text_input enable, im=%p", (void *)relay->input_method);
 
   if (relay->input_method == NULL) {
     return;
@@ -253,7 +254,7 @@ handle_new_text_input(struct wl_listener *listener, void *data)
       wl_container_of(listener, relay, new_text_input);
   struct wlr_text_input_v3 *wlr_text_input = data;
 
-  fprintf(stderr, "[IM-RELAY] new text_input created by client\n");
+  hikari_log_debug("new text_input created by client");
 
   struct hikari_text_input *text_input = calloc(1, sizeof(*text_input));
   if (text_input == NULL) {
@@ -318,14 +319,14 @@ handle_im_grab_keyboard(struct wl_listener *listener, void *data)
       wl_container_of(listener, relay, input_method_grab_keyboard);
   struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = data;
 
-  fprintf(stderr, "[IM-RELAY] keyboard grab requested\n");
+  hikari_log_debug("keyboard grab requested");
 
   struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(hikari_server.seat);
   if (keyboard != NULL) {
-    fprintf(stderr, "[IM-RELAY] setting keyboard on grab\n");
+    hikari_log_debug("setting keyboard on grab");
     wlr_input_method_keyboard_grab_v2_set_keyboard(keyboard_grab, keyboard);
   } else {
-    fprintf(stderr, "[IM-RELAY] WARNING: no keyboard available for grab\n");
+    hikari_log_warn("no keyboard available for grab");
   }
 }
 
@@ -349,10 +350,10 @@ handle_new_input_method(struct wl_listener *listener, void *data)
       wl_container_of(listener, relay, new_input_method);
   struct wlr_input_method_v2 *im = data;
 
-  fprintf(stderr, "[IM-RELAY] new input method connected\n");
+  hikari_log_debug("new input method connected");
 
   if (relay->input_method != NULL) {
-    fprintf(stderr, "[IM-RELAY] already have an input method, rejecting\n");
+    hikari_log_debug("already have an input method, rejecting");
     wlr_input_method_v2_send_unavailable(im);
     return;
   }

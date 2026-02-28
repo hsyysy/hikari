@@ -1,9 +1,7 @@
 #ifdef HAVE_LAYERSHELL
 #include <hikari/layer_shell.h>
 
-#ifndef NDEBUG
-#include <stdio.h>
-#endif
+#include <hikari/log.h>
 
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_xdg_shell.h>
@@ -187,9 +185,7 @@ void
 hikari_layer_init(
     struct hikari_layer *layer, struct wlr_layer_surface_v1 *wlr_layer_surface)
 {
-#ifndef NDEBUG
-  printf("LAYER INIT %p\n", layer);
-#endif
+  hikari_log_trace("LAYER INIT %p", layer);
 
   struct hikari_output *output = wlr_layer_surface->output != NULL
                                      ? wlr_layer_surface->output->data
@@ -392,9 +388,7 @@ destroy_handler(struct wl_listener *listener, void *data)
 {
   struct hikari_layer *layer = wl_container_of(listener, layer, destroy);
 
-#ifndef NDEBUG
-  printf("LAYER DESTROY %p\n", layer);
-#endif
+  hikari_log_trace("LAYER DESTROY %p", layer);
 
   if (layer->mapped) {
     unmap(layer);
@@ -409,9 +403,7 @@ destroy_handler(struct wl_listener *listener, void *data)
 static void
 map(struct hikari_layer *layer)
 {
-#ifndef NDEBUG
-  printf("LAYER MAP %p\n", layer);
-#endif
+  hikari_log_trace("LAYER MAP %p", layer);
 
   assert(!layer->mapped);
 
@@ -443,9 +435,7 @@ map_handler(struct wl_listener *listener, void *data)
 static void
 unmap(struct hikari_layer *layer)
 {
-#ifndef NDEBUG
-  printf("LAYER UNMAP %p\n", layer);
-#endif
+  hikari_log_trace("LAYER UNMAP %p", layer);
 
   struct hikari_workspace *workspace = layer->output->workspace;
 
@@ -555,9 +545,7 @@ destroy_popup_handler(struct wl_listener *listener, void *data)
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, destroy);
 
-#ifndef NDEBUG
-  printf("DESTROY LAYER POPUP %p\n", layer_popup);
-#endif
+  hikari_log_trace("DESTROY LAYER POPUP %p", layer_popup);
 
   fini_popup(layer_popup);
 
@@ -570,9 +558,7 @@ map_popup_handler(struct wl_listener *listener, void *data)
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, map);
 
-#ifndef NDEBUG
-  printf("MAP LAYER POPUP %p\n", layer_popup);
-#endif
+  hikari_log_trace("MAP LAYER POPUP %p", layer_popup);
 
   damage_popup(layer_popup, true);
 }
@@ -583,9 +569,7 @@ unmap_popup_handler(struct wl_listener *listener, void *data)
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, unmap);
 
-#ifndef NDEBUG
-  printf("UNMAP LAYER POPUP %p\n", layer_popup);
-#endif
+  hikari_log_trace("UNMAP LAYER POPUP %p", layer_popup);
 
   damage_popup(layer_popup, true);
 }
@@ -605,9 +589,7 @@ new_popup_popup_handler(struct wl_listener *listener, void *data)
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, new_popup);
 
-#ifndef NDEBUG
-  printf("NEW LAYER POPUP POPUP %p\n", layer_popup);
-#endif
+  hikari_log_trace("NEW LAYER POPUP POPUP %p", layer_popup);
 
   struct wlr_xdg_popup *wlr_popup = data;
 
@@ -622,9 +604,7 @@ new_popup_handler(struct wl_listener *listener, void *data)
 {
   struct hikari_layer *layer = wl_container_of(listener, layer, new_popup);
 
-#ifndef NDEBUG
-  printf("NEW LAYER POPUP\n");
-#endif
+  hikari_log_trace("NEW LAYER POPUP");
 
   struct hikari_layer_popup *layer_popup =
       hikari_malloc(sizeof(struct hikari_layer_popup));

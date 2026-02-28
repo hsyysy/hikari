@@ -8,6 +8,7 @@
 
 #include <hikari/binding.h>
 #include <hikari/binding_config.h>
+#include <hikari/log.h>
 #include <hikari/memory.h>
 #include <hikari/output.h>
 #include <hikari/server.h>
@@ -152,7 +153,7 @@ hikari_cursor_activate(struct hikari_cursor *cursor)
 {
   struct wlr_cursor *wlr_cursor = cursor->wlr_cursor;
 
-  fprintf(stderr, "[HIKARI-DBG] cursor_activate: wlr_cursor=%p pos=(%.0f,%.0f)\n",
+  hikari_log_debug("cursor_activate: wlr_cursor=%p pos=(%.0f,%.0f)",
       (void *)wlr_cursor, wlr_cursor->x, wlr_cursor->y);
 
   cursor->motion_absolute.notify = motion_absolute_handler;
@@ -228,7 +229,7 @@ motion_absolute_handler(struct wl_listener *listener, void *data)
   static int dbg_abs_count = 0;
   dbg_abs_count++;
   if (dbg_abs_count <= 5 || dbg_abs_count % 100 == 0)
-    fprintf(stderr, "[HIKARI-DBG] motion_absolute: #%d x=%.2f y=%.2f\n",
+    hikari_log_debug("motion_absolute: #%d x=%.2f y=%.2f",
         dbg_abs_count, event->x, event->y);
 
   wlr_cursor_warp_absolute(
@@ -264,7 +265,7 @@ motion_handler(struct wl_listener *listener, void *data)
   static int dbg_motion_count = 0;
   dbg_motion_count++;
   if (dbg_motion_count <= 5 || dbg_motion_count % 100 == 0)
-    fprintf(stderr, "[HIKARI-DBG] motion: #%d dx=%.2f dy=%.2f cursor_pos=(%.0f,%.0f)\n",
+    hikari_log_debug("motion: #%d dx=%.2f dy=%.2f cursor_pos=(%.0f,%.0f)",
         dbg_motion_count, event->delta_x, event->delta_y,
         cursor->wlr_cursor->x, cursor->wlr_cursor->y);
 

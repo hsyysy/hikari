@@ -9,6 +9,7 @@
 
 #include <hikari/configuration.h>
 #include <hikari/geometry.h>
+#include <hikari/log.h>
 #include <hikari/output.h>
 #include <hikari/server.h>
 #include <hikari/sheet.h>
@@ -177,9 +178,7 @@ first_map(struct hikari_xwayland_view *xwayland_view, bool *focus)
 static void
 map(struct hikari_view *view, bool focus)
 {
-#if !defined(NDEBUG)
-  printf("XWAYLAND MAP %p\n", view);
-#endif
+  hikari_log_trace("XWAYLAND MAP %p", view);
 
   struct hikari_xwayland_view *xwayland_view =
       (struct hikari_xwayland_view *)view;
@@ -210,9 +209,7 @@ map_handler(struct wl_listener *listener, void *data)
 static void
 unmap(struct hikari_view *view)
 {
-#if !defined(NDEBUG)
-  printf("XWAYLAND UNMAP %p\n", view);
-#endif
+  hikari_log_trace("XWAYLAND UNMAP %p", view);
 
   struct hikari_xwayland_view *xwayland_view =
       (struct hikari_xwayland_view *)view;
@@ -264,9 +261,7 @@ destroy_handler(struct wl_listener *listener, void *data)
   struct hikari_xwayland_view *xwayland_view =
       wl_container_of(listener, xwayland_view, destroy);
 
-#if !defined(NDEBUG)
-  printf("XWAYLAND DESTROY %p\n", xwayland_view);
-#endif
+  hikari_log_trace("XWAYLAND DESTROY %p", xwayland_view);
 
   struct hikari_view *view = (struct hikari_view *)xwayland_view;
 
@@ -298,9 +293,7 @@ request_configure_handler(struct wl_listener *listener, void *data)
   struct wlr_xwayland_surface *xwayland_surface = xwayland_view->surface;
   struct wlr_xwayland_surface_configure_event *event = data;
 
-#if !defined(NDEBUG)
-  printf("XWAYLAND CONFIGURE %p %d %d\n", xwayland_view, event->x, event->y);
-#endif
+  hikari_log_trace("XWAYLAND CONFIGURE %p %d %d", xwayland_view, event->x, event->y);
 
   struct wlr_box geometry = {
     .x = event->x, .y = event->y, .width = event->width, .height = event->height
@@ -426,9 +419,7 @@ hikari_xwayland_view_init(struct hikari_xwayland_view *xwayland_view,
 
   wlr_xwayland_surface_ping(xwayland_surface);
 
-#if !defined(NDEBUG)
-  printf("XWAYLAND NEW %p\n", xwayland_view);
-#endif
+  hikari_log_trace("XWAYLAND NEW %p", xwayland_view);
 
   xwayland_view->surface = xwayland_surface;
 

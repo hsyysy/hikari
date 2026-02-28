@@ -6,6 +6,7 @@
 #include <hikari/color.h>
 #include <hikari/geometry.h>
 #include <hikari/input_method_relay.h>
+#include <hikari/log.h>
 #include <hikari/output.h>
 #include <hikari/renderer.h>
 #include <hikari/view.h>
@@ -392,7 +393,7 @@ render_workspace(struct hikari_renderer *renderer)
   wl_list_for_each_reverse (view, &output->workspace->views, workspace_views) {
     view_count++;
     if (dbg_frame_count <= 10 || dbg_frame_count % 120 == 0)
-      fprintf(stderr, "[HIKARI-DBG] render_workspace: rendering view #%d view=%p geo=%dx%d+%d+%d hidden=%d surface=%p\n",
+      hikari_log_debug("render_workspace: rendering view #%d view=%p geo=%dx%d+%d+%d hidden=%d surface=%p",
           view_count, (void *)view,
           hikari_view_geometry(view)->width, hikari_view_geometry(view)->height,
           hikari_view_geometry(view)->x, hikari_view_geometry(view)->y,
@@ -401,7 +402,7 @@ render_workspace(struct hikari_renderer *renderer)
   }
 
   if ((dbg_frame_count <= 10 || dbg_frame_count % 120 == 0) && view_count == 0)
-    fprintf(stderr, "[HIKARI-DBG] render_workspace: NO views in workspace\n");
+    hikari_log_debug("render_workspace: NO views in workspace");
 
 #ifdef HAVE_LAYERSHELL
   render_layer(&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], renderer);
@@ -530,7 +531,7 @@ hikari_renderer_damage_frame_handler(struct wl_listener *listener, void *data)
 
   if (!wlr_output_configure_primary_swapchain(wlr_output, NULL, &output->swapchain)) {
     if (dbg_frame_count <= 5)
-      fprintf(stderr, "[HIKARI-DBG] frame #%d: swapchain configure failed\n", dbg_frame_count);
+      hikari_log_debug("frame #%d: swapchain configure failed", dbg_frame_count);
     frame_done(output);
     return;
   }
@@ -538,7 +539,7 @@ hikari_renderer_damage_frame_handler(struct wl_listener *listener, void *data)
   struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain);
   if (!buffer) {
     if (dbg_frame_count <= 5)
-      fprintf(stderr, "[HIKARI-DBG] frame #%d: buffer acquire failed\n", dbg_frame_count);
+      hikari_log_debug("frame #%d: buffer acquire failed", dbg_frame_count);
     frame_done(output);
     return;
   }
@@ -549,7 +550,7 @@ hikari_renderer_damage_frame_handler(struct wl_listener *listener, void *data)
 
   if (!pixman_region32_not_empty(&damage)) {
     if (dbg_frame_count <= 5 || dbg_frame_count % 60 == 0)
-      fprintf(stderr, "[HIKARI-DBG] frame #%d: no damage, skipping render\n", dbg_frame_count);
+      hikari_log_debug("frame #%d: no damage, skipping render", dbg_frame_count);
     pixman_region32_fini(&damage);
     wlr_buffer_unlock(buffer);
     frame_done(output);
@@ -557,7 +558,7 @@ hikari_renderer_damage_frame_handler(struct wl_listener *listener, void *data)
   }
 
   if (dbg_frame_count <= 10 || dbg_frame_count % 60 == 0)
-    fprintf(stderr, "[HIKARI-DBG] frame #%d: has damage, rendering\n", dbg_frame_count);
+    hikari_log_debug("frame #%d: has damage, rendering", dbg_frame_count);
 
   struct wlr_renderer *wlr_renderer = wlr_output->renderer;
   struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(wlr_renderer, buffer, NULL);

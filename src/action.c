@@ -4,6 +4,7 @@
 
 #include <hikari/action_config.h>
 #include <hikari/configuration.h>
+#include <hikari/log.h>
 #include <hikari/server.h>
 
 static char *
@@ -29,8 +30,7 @@ parse_binding(struct wl_list *action_configs,
   bool success = false;
 
   if (!ucl_object_tostring_safe(obj, &str)) {
-    fprintf(
-        stderr, "configuration error: expected string for binding action\n");
+    hikari_log_error("configuration error: expected string for binding action");
     goto done;
   }
 
@@ -432,8 +432,8 @@ parse_binding(struct wl_list *action_configs,
       char *command = NULL;
       const char *action_name = &str[7];
       if ((command = lookup_action(action_configs, action_name)) == NULL) {
-        fprintf(stderr,
-            "configuration error: unknown action \"%s\"\n",
+        hikari_log_error(
+            "configuration error: unknown action \"%s\"",
             action_name);
         goto done;
       } else {
@@ -441,7 +441,7 @@ parse_binding(struct wl_list *action_configs,
         *arg = command;
       }
     } else {
-      fprintf(stderr, "configuration error: unknown action \"%s\"\n", str);
+      hikari_log_error("configuration error: unknown action \"%s\"", str);
       goto done;
     }
   }
