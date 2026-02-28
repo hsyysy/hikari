@@ -1,7 +1,5 @@
 # Hikari - Wayland Compositor
 
-![Screenshot](https://acmelabs.space/~raichoo/hikari.png)
-
 ## Description
 
 _hikari_ is a stacking Wayland compositor with additional tiling capabilities,
