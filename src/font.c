@@ -20,8 +20,8 @@ font_metrics(
   pango_layout_get_pixel_size(layout, width, height);
 
   g_object_unref(layout);
-  cairo_surface_destroy(surface);
   cairo_destroy(cairo);
+  cairo_surface_destroy(surface);
 }
 
 void

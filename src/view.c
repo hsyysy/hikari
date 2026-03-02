@@ -491,8 +491,7 @@ hikari_view_set_title(struct hikari_view *view, const char *title)
   hikari_free(view->title);
 
   if (title != NULL) {
-    view->title = hikari_malloc(strlen(title) + 1);
-    strcpy(view->title, title);
+    view->title = strdup(title);
 
     if (hikari_server.workspace->focus_view == view) {
       assert(!hikari_view_is_hidden(view));
@@ -510,9 +509,7 @@ set_app_id(struct hikari_view *view, const char *id)
   assert(view->id == NULL);
   assert(id != NULL);
 
-  view->id = hikari_malloc(strlen(id) + 1);
-
-  strcpy(view->id, id);
+  view->id = strdup(id);
 }
 
 struct hikari_damage_data {
@@ -561,7 +558,7 @@ hikari_view_damage_whole(struct hikari_view *view)
 
   // TODO I know, this needs to be done A LOT better
   if (view->use_csd) {
-    hikari_output_damage_whole(output);
+    hikari_output_add_damage(output, hikari_view_border_geometry(view));
     return;
   }
 
@@ -830,14 +827,14 @@ hikari_view_map(struct hikari_view *view, struct wlr_surface *surface)
   wl_list_for_each (
       wlr_subsurface, &surface->current.subsurfaces_below, current.link) {
     struct hikari_view_subsurface *subsurface =
-        (struct hikari_view_subsurface *)malloc(
+        (struct hikari_view_subsurface *)hikari_malloc(
             sizeof(struct hikari_view_subsurface));
     hikari_view_subsurface_init(subsurface, view, wlr_subsurface);
   }
   wl_list_for_each (
       wlr_subsurface, &surface->current.subsurfaces_above, current.link) {
     struct hikari_view_subsurface *subsurface =
-        (struct hikari_view_subsurface *)malloc(
+        (struct hikari_view_subsurface *)hikari_malloc(
             sizeof(struct hikari_view_subsurface));
     hikari_view_subsurface_init(subsurface, view, wlr_subsurface);
   }

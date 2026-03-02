@@ -15,6 +15,7 @@ struct hikari_indicator_bar {
   int offset;
 
   float color[4];
+  char cached_text[256];
 };
 
 void

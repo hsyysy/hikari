@@ -19,6 +19,7 @@ render_image_to_surface(cairo_surface_t *output,
 {
   cairo_t *cairo = cairo_create(output);
   if (cairo_surface_status(image) != CAIRO_STATUS_SUCCESS) {
+    cairo_destroy(cairo);
     return;
   }
 
@@ -75,7 +76,7 @@ hikari_output_load_background(struct hikari_output *output,
 
   cairo_surface_t *output_surface = cairo_image_surface_create(
       CAIRO_FORMAT_ARGB32, output_width, output_height);
-  if (cairo_surface_status(image) != CAIRO_STATUS_SUCCESS) {
+  if (cairo_surface_status(output_surface) != CAIRO_STATUS_SUCCESS) {
     cairo_surface_destroy(image);
     goto done;
   }

@@ -57,6 +57,13 @@ hikari_geometry_shrink(struct wlr_box *geometry, int gap)
   geometry->y += gap;
   geometry->width -= gap * 2;
   geometry->height -= gap * 2;
+
+  if (geometry->width < 0) {
+    geometry->width = 0;
+  }
+  if (geometry->height < 0) {
+    geometry->height = 0;
+  }
 }
 
 void

@@ -17,16 +17,17 @@ hikari_command_execute(const char *cmd)
     if (child == 0) {
       setsid();
       execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
+      _exit(127);
     }
     _exit(child == -1);
   }
 
   for (;;) {
-    waitpid(child, &status, 0);
-    if (errno == EINTR) {
-      continue;
-    } else {
-      return;
+    if (waitpid(child, &status, 0) == -1) {
+      if (errno == EINTR) {
+        continue;
+      }
     }
+    return;
   }
 }

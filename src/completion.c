@@ -39,6 +39,7 @@ hikari_completion_add(struct hikari_completion *completion, char *data)
       hikari_malloc(sizeof(struct hikari_completion_item));
 
   strncpy(completion_item->data, data, sizeof(completion_item->data) - 1);
+  completion_item->data[sizeof(completion_item->data) - 1] = '\0';
 
   wl_list_insert(completion->items.prev, &completion_item->completion_items);
 }

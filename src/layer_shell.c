@@ -152,8 +152,8 @@ apply_state_for_layer(struct hikari_output *output,
   struct hikari_layer *layer;
 
   wl_list_for_each (layer, &output->layers[wlr_layer], layer_surfaces) {
-    struct wlr_layer_surface_v1 *wlr_layer = layer->surface;
-    struct wlr_layer_surface_v1_state *state = &wlr_layer->current;
+    struct wlr_layer_surface_v1 *wlr_layer_surface = layer->surface;
+    struct wlr_layer_surface_v1_state *state = &wlr_layer_surface->current;
 
     apply_layer_state(usable_area,
         state->anchor,
@@ -305,8 +305,8 @@ damage_popup(struct hikari_layer_popup *layer_popup, bool whole)
   struct wlr_xdg_popup *popup = layer_popup->popup;
   struct wlr_surface *surface = popup->base->surface;
 
-  int popup_sx = popup->base->current.geometry.x - popup->base->current.geometry.x;
-  int popup_sy = popup->base->current.geometry.y - popup->base->current.geometry.y;
+  int popup_sx = popup->base->current.geometry.x;
+  int popup_sy = popup->base->current.geometry.y;
   int ox = popup_sx, oy = popup_sy;
 
   struct hikari_layer *layer;

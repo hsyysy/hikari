@@ -10,10 +10,7 @@
 void
 hikari_group_init(struct hikari_group *group, const char *name)
 {
-  int length = strlen(name) + 1;
-
-  group->name = hikari_malloc(length);
-  strcpy(group->name, name);
+  group->name = strdup(name);
 
   wl_list_init(&group->views);
   wl_list_init(&group->visible_views);

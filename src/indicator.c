@@ -79,7 +79,7 @@ hikari_indicator_update_sheet(struct hikari_indicator *indicator,
   char *output_name = sheet->workspace->output->wlr_output->name;
   int i = 0;
 
-  char *text = hikari_malloc(strlen(output_name) + 13);
+  char text[256];
 
   if (publicview) {
     text[i++] = '!';
@@ -111,8 +111,6 @@ hikari_indicator_update_sheet(struct hikari_indicator *indicator,
   strcpy(&text[i], output_name);
 
   hikari_indicator_bar_update(&indicator->sheet, output, text);
-
-  hikari_free(text);
 }
 
 void

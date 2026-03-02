@@ -247,6 +247,7 @@ new_output_handler(struct wl_listener *listener, void *data)
 
   if (!wlr_output_init_render(
           wlr_output, server->allocator, server->renderer)) {
+    hikari_free(output);
     exit(EXIT_FAILURE);
   }
 
@@ -898,6 +899,7 @@ init_noop_output(struct hikari_server *server)
 
   if (!wlr_output_init_render(
           wlr_output, server->allocator, server->renderer)) {
+    hikari_free(noop_output);
     exit(EXIT_FAILURE);
   }
 
@@ -1194,6 +1196,13 @@ hikari_server_stop(void)
       server_switches) {
     hikari_switch_fini(swtch);
     hikari_free(swtch);
+  }
+
+  struct hikari_pointer *pointer, *pointer_tmp;
+  wl_list_for_each_safe(pointer, pointer_tmp, &server->pointers,
+      server_pointers) {
+    hikari_pointer_fini(pointer);
+    hikari_free(pointer);
   }
 
 #if HAVE_XWAYLAND

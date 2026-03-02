@@ -52,6 +52,7 @@ hikari_input_buffer_add_char(
 
   input_buffer->buffer[input_buffer->pos] = input;
   input_buffer->pos++;
+  input_buffer->buffer[input_buffer->pos] = '\0';
 }
 
 void
@@ -66,6 +67,7 @@ hikari_input_buffer_add_utf32_char(
 
   utf8_encode(&input_buffer->buffer[input_buffer->pos], length, codepoint);
   input_buffer->pos += length;
+  input_buffer->buffer[input_buffer->pos] = '\0';
 }
 
 void

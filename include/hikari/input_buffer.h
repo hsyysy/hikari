@@ -10,7 +10,7 @@ struct hikari_input_buffer {
 };
 
 struct hikari_input_buffer *
-input_buffer_init(struct hikari_input_buffer *input_buffer, char *content);
+hikari_input_buffer_init(struct hikari_input_buffer *input_buffer, char *content);
 
 void
 hikari_input_buffer_add_char(

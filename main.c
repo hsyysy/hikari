@@ -21,6 +21,10 @@ get_default_path(char *path)
     subdirectory = "/hikari/";
   }
 
+  if (prefix == NULL) {
+    return NULL;
+  }
+
   size_t len = strlen(prefix) + strlen(subdirectory) + strlen(path);
 
   char *ret = malloc(len + 1);

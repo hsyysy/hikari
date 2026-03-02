@@ -32,7 +32,7 @@
 #define FOCUS_GUARD(workspace, view)                                           \
   struct hikari_view *view = workspace->focus_view;                            \
                                                                                \
-  if (focus_view == NULL) {                                                    \
+  if (view == NULL) {                                                          \
     return;                                                                    \
   }
 
@@ -41,7 +41,6 @@ hikari_workspace_init(
     struct hikari_workspace *workspace, struct hikari_output *output)
 {
   wl_list_init(&workspace->views);
-  wl_list_init(&hikari_server.visible_groups);
   workspace->output = output;
   workspace->focus_view = NULL;
   workspace->sheets =

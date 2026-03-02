@@ -27,8 +27,6 @@
 #include <wlr/xwayland.h>
 #endif
 
-static int dbg_frame_count = 0;
-
 static inline void
 rect_render(float color[static 4],
     struct wlr_box *box,
@@ -67,23 +65,6 @@ render_border(struct hikari_border *border, struct hikari_renderer *renderer)
     return;
   }
 
-  struct wlr_box *geometry = &border->geometry;
-
-  pixman_region32_t damage;
-  pixman_region32_init(&damage);
-  pixman_region32_union_rect(&damage,
-      &damage,
-      geometry->x,
-      geometry->y,
-      geometry->width,
-      geometry->height);
-  pixman_region32_intersect(&damage, &damage, renderer->damage);
-
-  bool damaged = pixman_region32_not_empty(&damage);
-  if (!damaged) {
-    goto buffer_damage_finish;
-  }
-
   float *color;
   switch (border->state) {
     case HIKARI_BORDER_INACTIVE:
@@ -95,16 +76,13 @@ render_border(struct hikari_border *border, struct hikari_renderer *renderer)
       break;
 
     default:
-      goto buffer_damage_finish;
+      return;
   }
 
   rect_render(color, &border->top, renderer);
   rect_render(color, &border->bottom, renderer);
   rect_render(color, &border->left, renderer);
   rect_render(color, &border->right, renderer);
-
-buffer_damage_finish:
-  pixman_region32_fini(&damage);
 }
 
 static void
@@ -120,12 +98,27 @@ render_indicator_bar(struct hikari_indicator_bar *indicator_bar,
   geometry->width = indicator_bar->width;
   geometry->height = hikari_configuration->font.height;
 
+  pixman_region32_t damage;
+  pixman_region32_init(&damage);
+  pixman_region32_union_rect(
+      &damage, &damage, geometry->x, geometry->y, geometry->width, geometry->height);
+  pixman_region32_intersect(&damage, &damage, renderer->damage);
+
+  bool damaged = pixman_region32_not_empty(&damage);
+  if (!damaged) {
+    pixman_region32_fini(&damage);
+    return;
+  }
+
   float alpha = 1.0;
   wlr_render_pass_add_texture(renderer->pass, &(struct wlr_render_texture_options){
     .texture = indicator_bar->texture,
     .dst_box = *geometry,
     .alpha = &alpha,
+    .clip = &damage,
   });
+
+  pixman_region32_fini(&damage);
 }
 
 static inline void
@@ -388,21 +381,10 @@ render_workspace(struct hikari_renderer *renderer)
   render_layer(&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM], renderer);
 #endif
 
-  int view_count = 0;
   struct hikari_view *view;
   wl_list_for_each_reverse (view, &output->workspace->views, workspace_views) {
-    view_count++;
-    if (dbg_frame_count <= 10 || dbg_frame_count % 120 == 0)
-      hikari_log_debug("render_workspace: rendering view #%d view=%p geo=%dx%d+%d+%d hidden=%d surface=%p",
-          view_count, (void *)view,
-          hikari_view_geometry(view)->width, hikari_view_geometry(view)->height,
-          hikari_view_geometry(view)->x, hikari_view_geometry(view)->y,
-          hikari_view_is_hidden(view), (void *)view->surface);
     render_view(renderer, view);
   }
-
-  if ((dbg_frame_count <= 10 || dbg_frame_count % 120 == 0) && view_count == 0)
-    hikari_log_debug("render_workspace: NO views in workspace");
 
 #ifdef HAVE_LAYERSHELL
   render_layer(&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP], renderer);
@@ -421,52 +403,6 @@ render_overlay(struct hikari_renderer *renderer)
   render_layer(&output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY], renderer);
 }
 #endif
-
-static inline void
-render_output(struct hikari_output *output, pixman_region32_t *damage)
-{
-  struct wlr_output *wlr_output = output->wlr_output;
-  struct wlr_renderer *wlr_renderer = wlr_output->renderer;
-
-  if (!wlr_output_configure_primary_swapchain(wlr_output, NULL, &output->swapchain)) {
-    return;
-  }
-
-  struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain);
-  if (!buffer) {
-    return;
-  }
-
-  struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(wlr_renderer, buffer, NULL);
-  if (!pass) {
-    wlr_buffer_unlock(buffer);
-    return;
-  }
-
-  struct hikari_renderer renderer = {
-    .wlr_output = wlr_output,
-    .wlr_renderer = wlr_renderer,
-    .pass = pass,
-    .damage = damage
-  };
-
-  if (pixman_region32_not_empty(damage)) {
-    clear_output(&renderer);
-
-    hikari_server.mode->render(&renderer);
-  }
-
-  wlr_render_pass_submit(pass);
-
-  struct wlr_output_state state;
-  wlr_output_state_init(&state);
-  wlr_output_state_set_buffer(&state, buffer);
-  wlr_output_state_set_damage(&state, damage);
-  wlr_output_commit_state(wlr_output, &state);
-  wlr_output_state_finish(&state);
-
-  wlr_buffer_unlock(buffer);
-}
 
 #ifdef HAVE_LAYERSHELL
 static inline void
@@ -497,7 +433,7 @@ frame_done(struct hikari_output *output)
   struct timespec now;
   clock_gettime(CLOCK_MONOTONIC, &now);
 
-  wl_list_for_each_reverse (view, &output->views, output_views) {
+  wl_list_for_each_reverse (view, &output->workspace->views, workspace_views) {
     hikari_node_for_each_surface(
         (struct hikari_node *)view, send_frame_done, &now);
   }
@@ -527,19 +463,15 @@ hikari_renderer_damage_frame_handler(struct wl_listener *listener, void *data)
 
   struct wlr_output *wlr_output = output->wlr_output;
 
-  dbg_frame_count++;
-
   if (!wlr_output_configure_primary_swapchain(wlr_output, NULL, &output->swapchain)) {
-    if (dbg_frame_count <= 5)
-      hikari_log_debug("frame #%d: swapchain configure failed", dbg_frame_count);
+    hikari_log_debug("frame: swapchain configure failed");
     frame_done(output);
     return;
   }
 
   struct wlr_buffer *buffer = wlr_swapchain_acquire(output->swapchain);
   if (!buffer) {
-    if (dbg_frame_count <= 5)
-      hikari_log_debug("frame #%d: buffer acquire failed", dbg_frame_count);
+    hikari_log_debug("frame: buffer acquire failed");
     frame_done(output);
     return;
   }
@@ -549,16 +481,14 @@ hikari_renderer_damage_frame_handler(struct wl_listener *listener, void *data)
   wlr_damage_ring_rotate_buffer(&output->damage, buffer, &damage);
 
   if (!pixman_region32_not_empty(&damage)) {
-    if (dbg_frame_count <= 5 || dbg_frame_count % 60 == 0)
-      hikari_log_debug("frame #%d: no damage, skipping render", dbg_frame_count);
+    hikari_log_debug("frame: no damage, skipping render");
     pixman_region32_fini(&damage);
     wlr_buffer_unlock(buffer);
     frame_done(output);
     return;
   }
 
-  if (dbg_frame_count <= 10 || dbg_frame_count % 60 == 0)
-    hikari_log_debug("frame #%d: has damage, rendering", dbg_frame_count);
+  hikari_log_debug("frame: has damage, rendering");
 
   struct wlr_renderer *wlr_renderer = wlr_output->renderer;
   struct wlr_render_pass *pass = wlr_renderer_begin_buffer_pass(wlr_renderer, buffer, NULL);

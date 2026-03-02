@@ -402,6 +402,14 @@ done:
         hikari_log_error(                                                       \
             "configuration error: unknown \"" #name "\" key \"%s\"",           \
             key);                                                              \
+        if (first != NULL) {                                                   \
+          hikari_split_free(first);                                            \
+          first = NULL;                                                        \
+        }                                                                      \
+        if (second != NULL) {                                                  \
+          hikari_split_free(second);                                           \
+          second = NULL;                                                       \
+        }                                                                      \
         goto done;                                                             \
       }                                                                        \
     }                                                                          \
@@ -465,9 +473,7 @@ copy_in_config_string(const ucl_object_t *obj)
   bool success = ucl_object_tostring_safe(obj, &str);
 
   if (success) {
-    size_t len = strlen(str);
-    ret = hikari_malloc(len + 1);
-    strcpy(ret, str);
+    ret = strdup(str);
 
     return ret;
   } else {
@@ -594,6 +600,7 @@ parse_execute(
     char *command = copy_in_config_string(cur);
 
     if (command != NULL) {
+      hikari_free(execute->command);
       execute->command = command;
     } else {
       hikari_log_error("configuration error: invalid command for \"marks\" register \"%c\"",

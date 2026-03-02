@@ -55,8 +55,11 @@ destroy_handler(struct wl_listener *listener, void *data)
   hikari_keyboard_fini(keyboard);
   hikari_free(keyboard);
 
-  /* uint32_t caps = WL_SEAT_CAPABILITY_POINTER; */
-  /* wlr_seat_set_capabilities(hikari_server.seat, caps); */
+  uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
+  if (!wl_list_empty(&hikari_server.keyboards)) {
+    caps |= WL_SEAT_CAPABILITY_KEYBOARD;
+  }
+  wlr_seat_set_capabilities(hikari_server.seat, caps);
 }
 
 struct keycode_matcher_state {
@@ -178,7 +181,9 @@ load_keymap(struct hikari_keyboard_config *keyboard_config)
 
   switch (keyboard_config->xkb.type) {
     case HIKARI_XKB_TYPE_RULES:
-      assert(false);
+      hikari_keyboard_config_compile_keymap(keyboard_config);
+      keymap = xkb_keymap_ref(keyboard_config->xkb.value.keymap);
+      break;
     case HIKARI_XKB_TYPE_KEYMAP:
       keymap = xkb_keymap_ref(keyboard_config->xkb.value.keymap);
       break;

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 
@@ -217,6 +218,20 @@ hikari_cursor_center(struct hikari_cursor *cursor,
 }
 
 static void
+cursor_damage_output(struct wlr_cursor *wlr_cursor)
+{
+  struct wlr_output *wlr_output = wlr_output_layout_output_at(
+      hikari_server.output_layout, wlr_cursor->x, wlr_cursor->y);
+
+  if (wlr_output != NULL) {
+    struct hikari_output *output = wlr_output->data;
+    if (output != NULL && output->enabled) {
+      hikari_output_damage_whole(output);
+    }
+  }
+}
+
+static void
 motion_absolute_handler(struct wl_listener *listener, void *data)
 {
   struct hikari_cursor *cursor =
@@ -226,23 +241,11 @@ motion_absolute_handler(struct wl_listener *listener, void *data)
 
   struct wlr_pointer_motion_absolute_event *event = data;
 
-  static int dbg_abs_count = 0;
-  dbg_abs_count++;
-  if (dbg_abs_count <= 5 || dbg_abs_count % 100 == 0)
-    hikari_log_debug("motion_absolute: #%d x=%.2f y=%.2f",
-        dbg_abs_count, event->x, event->y);
-
   wlr_cursor_warp_absolute(
       cursor->wlr_cursor, &event->pointer->base, event->x, event->y);
 
   hikari_server.mode->cursor_move(event->time_msec);
-
-  struct hikari_output *output;
-  wl_list_for_each (output, &hikari_server.outputs, server_outputs) {
-    if (output->enabled) {
-      hikari_output_damage_whole(output);
-    }
-  }
+  cursor_damage_output(cursor->wlr_cursor);
 }
 
 static void
@@ -262,24 +265,11 @@ motion_handler(struct wl_listener *listener, void *data)
 
   struct wlr_pointer_motion_event *event = data;
 
-  static int dbg_motion_count = 0;
-  dbg_motion_count++;
-  if (dbg_motion_count <= 5 || dbg_motion_count % 100 == 0)
-    hikari_log_debug("motion: #%d dx=%.2f dy=%.2f cursor_pos=(%.0f,%.0f)",
-        dbg_motion_count, event->delta_x, event->delta_y,
-        cursor->wlr_cursor->x, cursor->wlr_cursor->y);
-
   wlr_cursor_move(
       cursor->wlr_cursor, &event->pointer->base, event->delta_x, event->delta_y);
 
   hikari_server.mode->cursor_move(event->time_msec);
-
-  struct hikari_output *output;
-  wl_list_for_each (output, &hikari_server.outputs, server_outputs) {
-    if (output->enabled) {
-      hikari_output_damage_whole(output);
-    }
-  }
+  cursor_damage_output(cursor->wlr_cursor);
 }
 
 static void

@@ -11,10 +11,7 @@ void
 hikari_output_config_init(
     struct hikari_output_config *output_config, const char *output_name)
 {
-  size_t output_name_len = strlen(output_name);
-  output_config->output_name = hikari_malloc(output_name_len + 1);
-
-  strcpy(output_config->output_name, output_name);
+  output_config->output_name = strdup(output_name);
 
   struct hikari_position_config default_position;
   hikari_position_config_init(&default_position);

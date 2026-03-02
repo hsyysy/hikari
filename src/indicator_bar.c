@@ -27,6 +27,7 @@ hikari_indicator_bar_init(struct hikari_indicator_bar *indicator_bar,
   indicator_bar->texture = NULL;
   indicator_bar->indicator = indicator;
   indicator_bar->offset = offset;
+  indicator_bar->cached_text[0] = '\0';
 
   hikari_indicator_bar_set_color(indicator_bar, color);
 }
@@ -46,6 +47,7 @@ hikari_indicator_bar_fini(struct hikari_indicator_bar *indicator_bar)
 {
   wlr_texture_destroy(indicator_bar->texture);
   indicator_bar->texture = NULL;
+  indicator_bar->cached_text[0] = '\0';
 }
 
 void
@@ -67,6 +69,10 @@ hikari_indicator_bar_update(struct hikari_indicator_bar *indicator_bar,
     const char *text)
 {
   if (indicator_bar->texture != NULL) {
+    if (text != NULL && strcmp(text, "") != 0 &&
+        strcmp(text, indicator_bar->cached_text) == 0) {
+      return;
+    }
     hikari_indicator_bar_fini(indicator_bar);
   }
 
@@ -120,6 +126,9 @@ hikari_indicator_bar_update(struct hikari_indicator_bar *indicator_bar,
 
   indicator_bar->texture = wlr_texture_from_pixels(
       wlr_renderer, DRM_FORMAT_ARGB8888, stride, width, height, data);
+
+  strncpy(indicator_bar->cached_text, text, sizeof(indicator_bar->cached_text) - 1);
+  indicator_bar->cached_text[sizeof(indicator_bar->cached_text) - 1] = '\0';
 
   cairo_surface_destroy(surface);
   g_object_unref(layout);

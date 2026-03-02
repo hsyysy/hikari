@@ -190,7 +190,7 @@ all: hikari hikari-unlocker
 -include $(DEPS)
 
 version.h:
-	echo "#define HIKARI_VERSION \"$(VERSION)\"" >> version.h
+	echo "#define HIKARI_VERSION \"$(VERSION)\"" > version.h
 
 hikari: version.h $(PROTOCOL_HEADERS) $(OBJS)
 	$(CC) $(LDFLAGS) $(CFLAGS) $(INCLUDES) -o $@ $(OBJS) $(LIBS)

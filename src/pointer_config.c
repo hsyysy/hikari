@@ -10,10 +10,7 @@ void
 hikari_pointer_config_init(
     struct hikari_pointer_config *pointer_config, const char *name)
 {
-  size_t keylen = strlen(name);
-
-  pointer_config->name = hikari_malloc(keylen + 1);
-  strcpy(pointer_config->name, name);
+  pointer_config->name = strdup(name);
 
   hikari_pointer_config_init_accel(pointer_config, 0);
   hikari_pointer_config_init_accel_profile(

@@ -57,7 +57,12 @@ check_password(const char *username)
     return false;
   }
 
-  read(0, input_buffer, INPUT_BUFFER_SIZE - 1);
+  ssize_t nread = read(0, input_buffer, INPUT_BUFFER_SIZE - 1);
+  if (nread <= 0) {
+    pam_end(auth_handle, PAM_AUTH_ERR);
+    return false;
+  }
+  input_buffer[nread] = '\0';
   int pam_status = pam_authenticate(auth_handle, 0);
   memset(input_buffer, 0, INPUT_BUFFER_SIZE);
   success = pam_status == PAM_SUCCESS;
