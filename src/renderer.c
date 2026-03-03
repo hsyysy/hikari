@@ -244,6 +244,7 @@ render_texture(struct wlr_texture *texture,
     enum wl_output_transform transform,
     float alpha)
 {
+  (void)output;
   pixman_region32_t local_damage;
   pixman_region32_init(&local_damage);
   pixman_region32_union_rect(
@@ -420,6 +421,8 @@ layer_for_each(struct wl_list *layers,
 static void
 send_frame_done(struct wlr_surface *surface, int sx, int sy, void *data)
 {
+  (void)sx;
+  (void)sy;
   assert(surface != NULL);
 
   struct timespec *now = data;
@@ -458,6 +461,7 @@ frame_done(struct hikari_output *output)
 void
 hikari_renderer_damage_frame_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_output *output =
       wl_container_of(listener, output, damage_frame);
 

@@ -68,6 +68,7 @@ move(struct hikari_view *view, int x, int y)
 static void
 commit_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_view *xwayland_view =
       wl_container_of(listener, xwayland_view, commit);
 
@@ -125,6 +126,7 @@ commit_handler(struct wl_listener *listener, void *data)
 static void
 set_title_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_view *xwayland_view =
       wl_container_of(listener, xwayland_view, set_title);
 
@@ -148,6 +150,7 @@ get_class(struct wlr_xwayland_surface *surface)
 static void
 first_map(struct hikari_xwayland_view *xwayland_view, bool *focus)
 {
+  (void)focus;
   struct hikari_view *view = (struct hikari_view *)xwayland_view;
   struct wlr_xwayland_surface *xwayland_surface = xwayland_view->surface;
   struct wlr_box *geometry = &view->geometry;
@@ -178,6 +181,7 @@ first_map(struct hikari_xwayland_view *xwayland_view, bool *focus)
 static void
 map(struct hikari_view *view, bool focus)
 {
+  (void)focus;
   hikari_log_trace("XWAYLAND MAP %p", view);
 
   struct hikari_xwayland_view *xwayland_view =
@@ -193,6 +197,7 @@ map(struct hikari_view *view, bool focus)
 static void
 map_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_view *xwayland_view =
       wl_container_of(listener, xwayland_view, map);
 
@@ -222,6 +227,7 @@ unmap(struct hikari_view *view)
 static void
 unmap_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_view *xwayland_view =
       wl_container_of(listener, xwayland_view, unmap);
 
@@ -231,6 +237,7 @@ unmap_handler(struct wl_listener *listener, void *data)
 static void
 dissociate_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_view *xwayland_view =
       wl_container_of(listener, xwayland_view, dissociate);
 
@@ -241,6 +248,7 @@ dissociate_handler(struct wl_listener *listener, void *data)
 static void
 associate_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_view *xwayland_view =
       wl_container_of(listener, xwayland_view, associate);
 
@@ -258,6 +266,7 @@ associate_handler(struct wl_listener *listener, void *data)
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_view *xwayland_view =
       wl_container_of(listener, xwayland_view, destroy);
 

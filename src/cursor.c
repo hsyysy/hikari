@@ -251,6 +251,8 @@ motion_absolute_handler(struct wl_listener *listener, void *data)
 static void
 frame_handler(struct wl_listener *listener, void *data)
 {
+  (void)listener;
+  (void)data;
   assert(!hikari_server_in_lock_mode());
 
   wlr_seat_pointer_notify_frame(hikari_server.seat);
@@ -286,6 +288,7 @@ button_handler(struct wl_listener *listener, void *data)
 static void
 axis_handler(struct wl_listener *listener, void *data)
 {
+  (void)listener;
   assert(!hikari_server_in_lock_mode());
 
   struct wlr_pointer_axis_event *event = data;
@@ -340,6 +343,7 @@ request_set_cursor_handler(struct wl_listener *listener, void *data)
 static void
 surface_destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_cursor *cursor =
       wl_container_of(listener, cursor, surface_destroy);
 

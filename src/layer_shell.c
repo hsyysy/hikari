@@ -348,6 +348,7 @@ done:
 static void
 commit_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_layer *layer = wl_container_of(listener, layer, commit);
   struct wlr_box old_geometry = layer->geometry;
   struct hikari_output *output = layer->output;
@@ -386,6 +387,7 @@ commit_handler(struct wl_listener *listener, void *data)
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_layer *layer = wl_container_of(listener, layer, destroy);
 
   hikari_log_trace("LAYER DESTROY %p", layer);
@@ -427,6 +429,7 @@ map(struct hikari_layer *layer)
 static void
 map_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_layer *layer = wl_container_of(listener, layer, map);
 
   map(layer);
@@ -469,6 +472,7 @@ unmap(struct hikari_layer *layer)
 static void
 unmap_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_layer *layer = wl_container_of(listener, layer, unmap);
 
   unmap(layer);
@@ -542,6 +546,7 @@ calculate_geometry(struct hikari_layer *layer)
 static void
 destroy_popup_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, destroy);
 
@@ -555,6 +560,7 @@ destroy_popup_handler(struct wl_listener *listener, void *data)
 static void
 map_popup_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, map);
 
@@ -566,6 +572,7 @@ map_popup_handler(struct wl_listener *listener, void *data)
 static void
 unmap_popup_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, unmap);
 
@@ -577,6 +584,7 @@ unmap_popup_handler(struct wl_listener *listener, void *data)
 static void
 commit_popup_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, commit);
 

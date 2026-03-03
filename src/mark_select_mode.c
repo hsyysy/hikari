@@ -15,6 +15,7 @@ mark_select(struct hikari_workspace *workspace,
     struct wlr_keyboard_key_event *event,
     struct hikari_keyboard *keyboard)
 {
+  (void)workspace;
   uint32_t keycode = event->keycode + 8;
   uint32_t codepoint = hikari_keyboard_get_codepoint(keyboard, keycode);
 
@@ -44,7 +45,9 @@ key_handler(
 
 static void
 modifiers_handler(struct hikari_keyboard *keyboard)
-{}
+{
+  (void)keyboard;
+}
 
 static void
 cancel(void)
@@ -53,11 +56,16 @@ cancel(void)
 static void
 button_handler(
     struct hikari_cursor *cursor, struct wlr_pointer_button_event *event)
-{}
+{
+  (void)cursor;
+  (void)event;
+}
 
 static void
 cursor_move(uint32_t time_msec)
-{}
+{
+  (void)time_msec;
+}
 
 void
 hikari_mark_select_mode_init(struct hikari_mark_select_mode *mark_select_mode)

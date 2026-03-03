@@ -16,6 +16,7 @@ set_mode(struct hikari_decoration *decoration)
 static void
 request_mode_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_decoration *decoration =
       wl_container_of(listener, decoration, request_mode);
 
@@ -25,6 +26,7 @@ request_mode_handler(struct wl_listener *listener, void *data)
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_decoration *decoration =
       wl_container_of(listener, decoration, destroy);
 

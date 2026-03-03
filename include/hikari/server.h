@@ -226,11 +226,13 @@ hikari_server_only_group(void *arg);
 #define SHEET_ACTIONS(n)                                                       \
   static inline void hikari_server_display_sheet_##n(void *arg)                \
   {                                                                            \
+    (void)arg;                                                                 \
     hikari_workspace_display_sheet_##n(hikari_server.workspace);               \
   }                                                                            \
                                                                                \
   static inline void hikari_server_pin_view_to_sheet_##n(void *arg)            \
   {                                                                            \
+    (void)arg;                                                                 \
     hikari_workspace_pin_view_to_sheet_##n(hikari_server.workspace);           \
   }
 
@@ -265,6 +267,7 @@ hikari_server_move_view_right(void *arg);
 #define MOVE(pos)                                                              \
   static inline void hikari_server_move_view_##pos(void *arg)                  \
   {                                                                            \
+    (void)arg;                                                                 \
     hikari_workspace_move_view_##pos(hikari_server.workspace);                 \
   }
 
@@ -295,24 +298,28 @@ hikari_server_decrease_view_size_right(void *arg);
 static inline void
 hikari_server_decrease_view_size_up(void *arg)
 {
+  (void)arg;
   hikari_workspace_move_resize_view(hikari_server.workspace, 0, 0, 0, -STEP);
 }
 
 static inline void
 hikari_server_increase_view_size_down(void *arg)
 {
+  (void)arg;
   hikari_workspace_move_resize_view(hikari_server.workspace, 0, 0, 0, STEP);
 }
 
 static inline void
 hikari_server_decrease_view_size_left(void *arg)
 {
+  (void)arg;
   hikari_workspace_move_resize_view(hikari_server.workspace, 0, 0, -STEP, 0);
 }
 
 static inline void
 hikari_server_increase_view_size_right(void *arg)
 {
+  (void)arg;
   hikari_workspace_move_resize_view(hikari_server.workspace, 0, 0, STEP, 0);
 }
 #undef STEP
@@ -320,24 +327,28 @@ hikari_server_increase_view_size_right(void *arg)
 static inline void
 hikari_server_snap_view_up(void *arg)
 {
+  (void)arg;
   hikari_workspace_snap_view_up(hikari_server.workspace);
 }
 
 static inline void
 hikari_server_snap_view_down(void *arg)
 {
+  (void)arg;
   hikari_workspace_snap_view_down(hikari_server.workspace);
 }
 
 static inline void
 hikari_server_snap_view_left(void *arg)
 {
+  (void)arg;
   hikari_workspace_snap_view_left(hikari_server.workspace);
 }
 
 static inline void
 hikari_server_snap_view_right(void *arg)
 {
+  (void)arg;
   hikari_workspace_snap_view_right(hikari_server.workspace);
 }
 
@@ -362,6 +373,7 @@ CYCLE_ACTION(prev_workspace)
 #define WORKSPACE_ACTION(name)                                                 \
   static inline void hikari_server_##name(void *arg)                           \
   {                                                                            \
+    (void)arg;                                                                 \
     hikari_workspace_##name(hikari_server.workspace);                          \
   }
 
@@ -394,6 +406,7 @@ WORKSPACE_ACTION(clear)
 static inline void
 hikari_server_clear_workspace(void *arg)
 {
+  (void)arg;
   hikari_workspace_clear(hikari_server.workspace);
 }
 

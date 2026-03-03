@@ -34,6 +34,7 @@ recalculate_geometry(struct wlr_box *geometry,
 static void
 commit_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, commit);
 
@@ -56,6 +57,7 @@ commit_handler(struct wl_listener *listener, void *data)
 static void
 map_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, map);
 
@@ -95,6 +97,7 @@ unmap(struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view)
 static void
 unmap_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, unmap);
 
@@ -106,6 +109,7 @@ unmap_handler(struct wl_listener *listener, void *data)
 static void
 dissociate_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, dissociate);
 
@@ -116,6 +120,7 @@ dissociate_handler(struct wl_listener *listener, void *data)
 static void
 associate_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, associate);
 
@@ -134,6 +139,7 @@ associate_handler(struct wl_listener *listener, void *data)
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xwayland_unmanaged_view *xwayland_unmanaged_view =
       wl_container_of(listener, xwayland_unmanaged_view, destroy);
 
@@ -187,7 +193,9 @@ surface_at(
 
 static void
 focus(struct hikari_node *node)
-{}
+{
+  (void)node;
+}
 
 void
 hikari_xwayland_unmanaged_view_init(

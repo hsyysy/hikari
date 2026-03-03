@@ -9,6 +9,7 @@
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_pointer *pointer = wl_container_of(listener, pointer, destroy);
 
   hikari_pointer_fini(pointer);

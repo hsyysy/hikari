@@ -22,6 +22,7 @@ static void
 key_handler(
     struct hikari_keyboard *keyboard, struct wlr_keyboard_key_event *event)
 {
+  (void)keyboard;
   if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
     hikari_server_enter_normal_mode(NULL);
   }
@@ -29,7 +30,9 @@ key_handler(
 
 static void
 modifiers_handler(struct hikari_keyboard *keyboard)
-{}
+{
+  (void)keyboard;
+}
 
 static void
 cursor_move(uint32_t time_msec)
@@ -57,6 +60,7 @@ static void
 button_handler(
     struct hikari_cursor *cursor, struct wlr_pointer_button_event *event)
 {
+  (void)cursor;
   wlr_seat_pointer_notify_button(
       hikari_server.seat, event->time_msec, event->button, event->state);
 

@@ -97,6 +97,7 @@ add_pointer(struct hikari_server *server, struct wlr_input_device *device)
 static void
 add_keyboard(struct hikari_server *server, struct wlr_input_device *device)
 {
+  (void)server;
   struct hikari_keyboard *keyboard =
       hikari_malloc(sizeof(struct hikari_keyboard));
 
@@ -116,6 +117,7 @@ add_keyboard(struct hikari_server *server, struct wlr_input_device *device)
 static void
 add_switch(struct hikari_server *server, struct wlr_input_device *device)
 {
+  (void)server;
   struct hikari_switch *swtch = hikari_malloc(sizeof(struct hikari_switch));
 
   hikari_switch_init(swtch, device);
@@ -537,6 +539,7 @@ setup_cursor(struct hikari_server *server)
 static void
 server_decoration_mode_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_view_decoration *decoration =
       wl_container_of(listener, decoration, mode);
   struct hikari_view *view = decoration->view;
@@ -553,6 +556,7 @@ server_decoration_mode_handler(struct wl_listener *listener, void *data)
 static void
 server_decoration_handler(struct wl_listener *listener, void *data)
 {
+  (void)listener;
   struct wlr_server_decoration *wlr_decoration = data;
   struct hikari_view *view =
       wl_container_of(wlr_decoration->surface, view, surface);
@@ -574,6 +578,7 @@ server_decoration_handler(struct wl_listener *listener, void *data)
 static void
 new_toplevel_decoration_handler(struct wl_listener *listener, void *data)
 {
+  (void)listener;
   struct wlr_xdg_toplevel_decoration_v1 *wlr_decoration = data;
 
   struct hikari_decoration *decoration =
@@ -605,6 +610,8 @@ setup_decorations(struct hikari_server *server)
 static void
 start_drag_handler(struct wl_listener *listener, void *data)
 {
+  (void)listener;
+  (void)data;
   struct wlr_surface *surface;
   struct hikari_workspace *workspace;
   double sx, sy;
@@ -692,6 +699,7 @@ setup_xdg_shell(struct hikari_server *server)
 static void
 new_layer_shell_surface_handler(struct wl_listener *listener, void *data)
 {
+  (void)listener;
   struct wlr_layer_surface_v1 *wlr_layer_surface =
       (struct wlr_layer_surface_v1 *)data;
   struct hikari_layer *layer = hikari_malloc(sizeof(struct hikari_layer));
@@ -713,6 +721,7 @@ setup_layer_shell(struct hikari_server *server)
 static void
 xdg_activation_request_handler(struct wl_listener *listener, void *data)
 {
+  (void)listener;
   struct wlr_xdg_activation_v1_request_activate_event *event = data;
   struct wlr_surface *surface = event->surface;
 
@@ -804,6 +813,7 @@ struct hikari_server hikari_server;
 static void
 output_layout_change_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_server *server =
       wl_container_of(listener, server, output_layout_change);
 
@@ -837,6 +847,7 @@ output_layout_change_handler(struct wl_listener *listener, void *data)
 static bool
 drop_privileges(struct hikari_server *server)
 {
+  (void)server;
   if (getuid() != geteuid() || getgid() != getegid()) {
     if (setuid(getuid()) != 0 || setgid(getgid()) != 0) {
       return false;
@@ -1085,6 +1096,7 @@ hikari_server_start(char *config_path, char *autostart)
 static int
 shutdown_handler(void *data)
 {
+  (void)data;
   struct hikari_server *server = &hikari_server;
 
   if (server->shutdown_timer == NULL) {
@@ -1116,6 +1128,7 @@ destroy_shutdown_timer(struct hikari_server *server)
 void
 hikari_server_terminate(void *arg)
 {
+  (void)arg;
   hikari_log_info("hikari_server_terminate called");
 
   struct hikari_server *server = &hikari_server;
@@ -1253,12 +1266,14 @@ hikari_server_find_or_create_group(const char *group_name)
 void
 hikari_server_lock(void *arg)
 {
+  (void)arg;
   hikari_lock_mode_enter();
 }
 
 void
 hikari_server_reload(void *arg)
 {
+  (void)arg;
   hikari_configuration_reload(hikari_server.config_path);
 }
 
@@ -1292,6 +1307,7 @@ hikari_server_reload(void *arg)
                                                                                \
   void hikari_server_cycle_##name##_view(void *arg)                            \
   {                                                                            \
+    (void)arg;                                                                 \
     struct hikari_view *view;                                                  \
                                                                                \
     hikari_server_set_cycling();                                               \
@@ -1309,6 +1325,7 @@ CYCLE_VIEW(prev, next)
 #define CYCLE_ACTION(n)                                                        \
   void hikari_server_cycle_##n(void *arg)                                      \
   {                                                                            \
+    (void)arg;                                                                 \
     struct hikari_view *view;                                                  \
                                                                                \
     hikari_server_set_cycling();                                               \
@@ -1334,6 +1351,7 @@ CYCLE_ACTION(prev_group)
 #define CYCLE_WORKSPACE(link)                                                  \
   void hikari_server_cycle_##link##_workspace(void *arg)                       \
   {                                                                            \
+    (void)arg;                                                                 \
     struct hikari_workspace *workspace = hikari_server.workspace;              \
     struct hikari_workspace *link = hikari_workspace_##link(workspace);        \
                                                                                \
@@ -1368,6 +1386,7 @@ update_indication(struct hikari_view *view)
 void
 hikari_server_enter_normal_mode(void *arg)
 {
+  (void)arg;
   struct hikari_server *server = &hikari_server;
 
   hikari_cursor_reset_image(&server->cursor);
@@ -1380,6 +1399,7 @@ hikari_server_enter_normal_mode(void *arg)
 void
 hikari_server_enter_sheet_assign_mode(void *arg)
 {
+  (void)arg;
   assert(hikari_server.workspace != NULL);
 
   struct hikari_workspace *workspace = hikari_server.workspace;
@@ -1397,6 +1417,7 @@ hikari_server_enter_sheet_assign_mode(void *arg)
 void
 hikari_server_enter_move_mode(void *arg)
 {
+  (void)arg;
   struct hikari_view *focus_view = hikari_server.workspace->focus_view;
 
   if (focus_view == NULL) {
@@ -1411,6 +1432,7 @@ hikari_server_enter_move_mode(void *arg)
 void
 hikari_server_enter_resize_mode(void *arg)
 {
+  (void)arg;
   struct hikari_view *focus_view = hikari_server.workspace->focus_view;
 
   if (focus_view == NULL) {
@@ -1425,6 +1447,7 @@ hikari_server_enter_resize_mode(void *arg)
 void
 hikari_server_enter_group_assign_mode(void *arg)
 {
+  (void)arg;
   struct hikari_view *focus_view = hikari_server.workspace->focus_view;
 
   if (focus_view == NULL) {
@@ -1437,6 +1460,7 @@ hikari_server_enter_group_assign_mode(void *arg)
 void
 hikari_server_enter_input_grab_mode(void *arg)
 {
+  (void)arg;
   struct hikari_workspace *workspace = hikari_server.workspace;
   struct hikari_view *focus_view = workspace->focus_view;
 
@@ -1452,18 +1476,21 @@ hikari_server_enter_input_grab_mode(void *arg)
 void
 hikari_server_enter_mark_select_mode(void *arg)
 {
+  (void)arg;
   hikari_mark_select_mode_enter(false);
 }
 
 void
 hikari_server_enter_mark_select_switch_mode(void *arg)
 {
+  (void)arg;
   hikari_mark_select_mode_enter(true);
 }
 
 void
 hikari_server_enter_layout_select_mode(void *arg)
 {
+  (void)arg;
   struct hikari_workspace *workspace = hikari_server.workspace;
   struct hikari_view *focus_view = workspace->focus_view;
 
@@ -1477,6 +1504,7 @@ hikari_server_enter_layout_select_mode(void *arg)
 void
 hikari_server_enter_mark_assign_mode(void *arg)
 {
+  (void)arg;
   assert(hikari_server.workspace != NULL);
 
   struct hikari_workspace *workspace = hikari_server.workspace;
@@ -1501,6 +1529,7 @@ hikari_server_execute_command(void *arg)
 void
 hikari_server_reset_sheet_layout(void *arg)
 {
+  (void)arg;
   struct hikari_layout *layout = hikari_server.workspace->sheet->layout;
 
   if (layout == NULL) {
@@ -1513,6 +1542,7 @@ hikari_server_reset_sheet_layout(void *arg)
 void
 hikari_server_layout_restack_append(void *arg)
 {
+  (void)arg;
   struct hikari_workspace *workspace = hikari_server.workspace;
   struct hikari_sheet *sheet = workspace->sheet;
   struct hikari_layout *layout = sheet->layout;
@@ -1532,6 +1562,7 @@ hikari_server_layout_restack_append(void *arg)
 void
 hikari_server_layout_restack_prepend(void *arg)
 {
+  (void)arg;
   struct hikari_workspace *workspace = hikari_server.workspace;
   struct hikari_sheet *sheet = workspace->sheet;
   struct hikari_layout *layout = sheet->layout;
@@ -1674,6 +1705,7 @@ move_view(int dx, int dy)
 void
 hikari_server_move_view_up(void *arg)
 {
+  (void)arg;
   const int step = hikari_configuration->step;
   move_view(0, -step);
 }
@@ -1681,6 +1713,7 @@ hikari_server_move_view_up(void *arg)
 void
 hikari_server_move_view_down(void *arg)
 {
+  (void)arg;
   const int step = hikari_configuration->step;
   move_view(0, step);
 }
@@ -1688,6 +1721,7 @@ hikari_server_move_view_down(void *arg)
 void
 hikari_server_move_view_left(void *arg)
 {
+  (void)arg;
   const int step = hikari_configuration->step;
   move_view(-step, 0);
 }
@@ -1695,6 +1729,7 @@ hikari_server_move_view_left(void *arg)
 void
 hikari_server_move_view_right(void *arg)
 {
+  (void)arg;
   const int step = hikari_configuration->step;
   move_view(step, 0);
 }
@@ -1730,6 +1765,7 @@ move_resize_view(int dx, int dy, int dwidth, int dheight)
 void
 hikari_server_decrease_view_size_down(void *arg)
 {
+  (void)arg;
   const int step = hikari_configuration->step;
   move_resize_view(0, step, 0, -step);
 }
@@ -1737,6 +1773,7 @@ hikari_server_decrease_view_size_down(void *arg)
 void
 hikari_server_decrease_view_size_right(void *arg)
 {
+  (void)arg;
   const int step = hikari_configuration->step;
   move_resize_view(step, 0, -step, 0);
 }
@@ -1744,6 +1781,7 @@ hikari_server_decrease_view_size_right(void *arg)
 void
 hikari_server_increase_view_size_up(void *arg)
 {
+  (void)arg;
   const int step = hikari_configuration->step;
   move_resize_view(0, -step, 0, step);
 }
@@ -1751,6 +1789,7 @@ hikari_server_increase_view_size_up(void *arg)
 void
 hikari_server_increase_view_size_left(void *arg)
 {
+  (void)arg;
   const int step = hikari_configuration->step;
   move_resize_view(-step, 0, step, 0);
 }
@@ -1758,6 +1797,7 @@ hikari_server_increase_view_size_left(void *arg)
 void
 hikari_server_lower_group(void *arg)
 {
+  (void)arg;
   struct hikari_view *focus_view = hikari_server.workspace->focus_view;
 
   if (focus_view == NULL) {
@@ -1773,6 +1813,7 @@ hikari_server_lower_group(void *arg)
 void
 hikari_server_raise_group(void *arg)
 {
+  (void)arg;
   struct hikari_view *focus_view = hikari_server.workspace->focus_view;
 
   if (focus_view == NULL) {
@@ -1787,6 +1828,7 @@ hikari_server_raise_group(void *arg)
 void
 hikari_server_only_group(void *arg)
 {
+  (void)arg;
   struct hikari_view *focus_view = hikari_server.workspace->focus_view;
 
   if (focus_view == NULL) {
@@ -1807,6 +1849,7 @@ hikari_server_only_group(void *arg)
 void
 hikari_server_hide_group(void *arg)
 {
+  (void)arg;
   struct hikari_view *focus_view = hikari_server.workspace->focus_view;
 
   if (focus_view == NULL) {
@@ -1824,6 +1867,7 @@ hikari_server_hide_group(void *arg)
 void
 hikari_server_toggle_damage_tracking(void *arg)
 {
+  (void)arg;
   hikari_server.track_damage = !hikari_server.track_damage;
 
   struct hikari_output *output = NULL;

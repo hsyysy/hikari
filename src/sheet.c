@@ -94,6 +94,7 @@ single_layout(struct wlr_box *frame,
     int nr_of_views,
     bool *center)
 {
+  (void)nr_of_views;
   hikari_view_tile(first, frame, *center);
   *center = false;
   return scan_next_tileable_view(first);
@@ -105,6 +106,9 @@ empty_layout(struct wlr_box *frame,
     int nr_of_views,
     bool *center)
 {
+  (void)frame;
+  (void)nr_of_views;
+  (void)center;
   return first;
 }
 
@@ -260,6 +264,7 @@ SPLIT_LAYOUT(stack, y, x, height, width)
       int max,                                                                 \
       bool *center)                                                            \
   {                                                                            \
+    (void)sheet;                                                               \
     int nr_of_views = tileable_views(first);                                   \
     if (nr_of_views > max) {                                                   \
       nr_of_views = max;                                                       \

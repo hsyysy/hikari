@@ -77,6 +77,7 @@ handle_pending_action(void)
 static void
 dump_debug(struct hikari_server *server)
 {
+  (void)server;
   struct hikari_view *view;
   hikari_log_trace("---------------------------------------------------------------------");
   hikari_log_trace("VIEWS");

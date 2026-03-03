@@ -139,19 +139,12 @@ WLROOTS_CFLAGS += -DWLR_USE_UNSTABLE=1
 PANGO_CFLAGS := $(shell $(PKG_CONFIG) --cflags pangocairo)
 PANGO_LIBS := $(shell $(PKG_CONFIG) --libs pangocairo)
 
-CAIRO_CFLAGS := $(shell $(PKG_CONFIG) --cflags cairo)
-CAIRO_LIBS := $(shell $(PKG_CONFIG) --libs cairo)
-
-PIXMAN_CFLAGS := $(shell $(PKG_CONFIG) --cflags pixman-1)
 PIXMAN_LIBS := $(shell $(PKG_CONFIG) --libs pixman-1)
 
-XKBCOMMON_CFLAGS := $(shell $(PKG_CONFIG) --cflags xkbcommon)
 XKBCOMMON_LIBS := $(shell $(PKG_CONFIG) --libs xkbcommon)
 
-WAYLAND_CFLAGS := $(shell $(PKG_CONFIG) --cflags wayland-server)
 WAYLAND_LIBS := $(shell $(PKG_CONFIG) --libs wayland-server)
 
-LIBINPUT_CFLAGS := $(shell $(PKG_CONFIG) --cflags libinput)
 LIBINPUT_LIBS := $(shell $(PKG_CONFIG) --libs libinput)
 
 UCL_CFLAGS := $(shell $(PKG_CONFIG) --cflags libucl)
@@ -160,17 +153,11 @@ UCL_LIBS := $(shell $(PKG_CONFIG) --libs libucl)
 CFLAGS += \
 	$(WLROOTS_CFLAGS) \
 	$(PANGO_CFLAGS) \
-	$(CAIRO_CFLAGS) \
-	$(PIXMAN_CFLAGS) \
-	$(XKBCOMMON_CFLAGS) \
-	$(WAYLAND_CFLAGS) \
-	$(LIBINPUT_CFLAGS) \
 	$(UCL_CFLAGS)
 
 LIBS = \
 	$(WLROOTS_LIBS) \
 	$(PANGO_LIBS) \
-	$(CAIRO_LIBS) \
 	$(PIXMAN_LIBS) \
 	$(XKBCOMMON_LIBS) \
 	$(WAYLAND_LIBS) \
@@ -193,7 +180,7 @@ version.h:
 	echo "#define HIKARI_VERSION \"$(VERSION)\"" > version.h
 
 hikari: version.h $(PROTOCOL_HEADERS) $(OBJS)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(INCLUDES) -o $@ $(OBJS) $(LIBS)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 xdg-shell-protocol.h:
 	wayland-scanner server-header $(WAYLAND_PROTOCOLS)/stable/xdg-shell/xdg-shell.xml $@

@@ -16,7 +16,7 @@ parse_modifier_mask(const char *str, uint8_t *result, const char **remaining)
 {
   size_t len = strlen(str);
   uint8_t mask = 0;
-  int pos;
+  size_t pos;
 
   for (pos = 0; pos < len; pos++) {
     char c = str[pos];

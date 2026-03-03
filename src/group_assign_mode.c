@@ -230,6 +230,7 @@ handle_keysym(
         put_char(input_buffer, keyboard, keycode);
         break;
       }
+    /* fallthrough */
     case XKB_KEY_Escape:
       hikari_server_enter_normal_mode(NULL);
       goto done;
@@ -261,7 +262,9 @@ key_handler(
 
 static void
 modifiers_handler(struct hikari_keyboard *keyboard)
-{}
+{
+  (void)keyboard;
+}
 
 static void
 cancel(void)
@@ -297,11 +300,16 @@ cancel(void)
 static void
 button_handler(
     struct hikari_cursor *cursor, struct wlr_pointer_button_event *event)
-{}
+{
+  (void)cursor;
+  (void)event;
+}
 
 static void
 cursor_move(uint32_t time_msec)
-{}
+{
+  (void)time_msec;
+}
 
 void
 hikari_group_assign_mode_init(

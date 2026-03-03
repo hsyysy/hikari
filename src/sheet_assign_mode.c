@@ -84,6 +84,7 @@ static void
 handle_keysym(
     struct hikari_keyboard *keyboard, uint32_t keycode, xkb_keysym_t sym)
 {
+  (void)keycode;
   struct hikari_sheet_assign_mode *mode = get_mode();
   struct hikari_workspace *workspace = hikari_server.workspace;
   struct hikari_sheet *sheet = mode->sheet;
@@ -144,6 +145,7 @@ handle_keysym(
       if (!hikari_keyboard_check_modifier(keyboard, WLR_MODIFIER_CTRL)) {
         goto done;
       }
+    /* fallthrough */
     case XKB_KEY_Escape:
       hikari_server_enter_normal_mode(workspace);
       goto done;
@@ -174,7 +176,9 @@ key_handler(
 
 static void
 modifiers_handler(struct hikari_keyboard *keyboard)
-{}
+{
+  (void)keyboard;
+}
 
 static void
 cancel(void)
@@ -200,11 +204,16 @@ cancel(void)
 static void
 button_handler(
     struct hikari_cursor *cursor, struct wlr_pointer_button_event *event)
-{}
+{
+  (void)cursor;
+  (void)event;
+}
 
 static void
 cursor_move(uint32_t time_msec)
-{}
+{
+  (void)time_msec;
+}
 
 void
 hikari_sheet_assign_mode_init(

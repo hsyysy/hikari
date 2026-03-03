@@ -104,6 +104,7 @@ popup_update_position(struct hikari_input_popup *popup)
 static void
 handle_popup_surface_commit(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_input_popup *popup =
       wl_container_of(listener, popup, surface_commit);
 
@@ -114,6 +115,7 @@ handle_popup_surface_commit(struct wl_listener *listener, void *data)
 static void
 handle_popup_surface_map(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_input_popup *popup =
       wl_container_of(listener, popup, surface_map);
 
@@ -125,6 +127,7 @@ handle_popup_surface_map(struct wl_listener *listener, void *data)
 static void
 handle_popup_surface_unmap(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_input_popup *popup =
       wl_container_of(listener, popup, surface_unmap);
 
@@ -135,6 +138,7 @@ handle_popup_surface_unmap(struct wl_listener *listener, void *data)
 static void
 handle_popup_destroy(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_input_popup *popup =
       wl_container_of(listener, popup, destroy);
 
@@ -186,6 +190,7 @@ handle_im_new_popup(struct wl_listener *listener, void *data)
 static void
 handle_text_input_enable(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_text_input *text_input =
       wl_container_of(listener, text_input, enable);
   struct hikari_input_method_relay *relay = text_input->relay;
@@ -203,6 +208,7 @@ handle_text_input_enable(struct wl_listener *listener, void *data)
 static void
 handle_text_input_commit(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_text_input *text_input =
       wl_container_of(listener, text_input, commit);
   struct hikari_input_method_relay *relay = text_input->relay;
@@ -221,6 +227,7 @@ handle_text_input_commit(struct wl_listener *listener, void *data)
 static void
 handle_text_input_disable(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_text_input *text_input =
       wl_container_of(listener, text_input, disable);
   struct hikari_input_method_relay *relay = text_input->relay;
@@ -236,6 +243,7 @@ handle_text_input_disable(struct wl_listener *listener, void *data)
 static void
 handle_text_input_destroy(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_text_input *text_input =
       wl_container_of(listener, text_input, destroy);
 
@@ -282,6 +290,7 @@ handle_new_text_input(struct wl_listener *listener, void *data)
 static void
 handle_im_commit(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_input_method_relay *relay =
       wl_container_of(listener, relay, input_method_commit);
   struct wlr_input_method_v2 *im = relay->input_method;
@@ -333,6 +342,7 @@ handle_im_grab_keyboard(struct wl_listener *listener, void *data)
 static void
 handle_im_destroy(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_input_method_relay *relay =
       wl_container_of(listener, relay, input_method_destroy);
 

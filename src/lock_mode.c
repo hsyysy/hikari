@@ -219,6 +219,7 @@ key_handler(
             disable_outputs();
             return;
           }
+        /* fallthrough */
         default:
           codepoint = hikari_keyboard_get_codepoint(keyboard, keycode);
 
@@ -237,12 +238,17 @@ key_handler(
 
 static void
 modifiers_handler(struct hikari_keyboard *keyboard)
-{}
+{
+  (void)keyboard;
+}
 
 static void
 button_handler(
     struct hikari_cursor *cursor, struct wlr_pointer_button_event *event)
-{}
+{
+  (void)cursor;
+  (void)event;
+}
 
 static void
 reset_visibility(void)
@@ -289,11 +295,14 @@ cancel(void)
 
 static void
 cursor_move(uint32_t time_msec)
-{}
+{
+  (void)time_msec;
+}
 
 static int
 disable_outputs_handler(void *data)
 {
+  (void)data;
   assert(hikari_server_in_lock_mode());
 
   disable_outputs();
@@ -320,6 +329,7 @@ hikari_lock_mode_init(struct hikari_lock_mode *lock_mode)
 void
 hikari_lock_mode_fini(struct hikari_lock_mode *lock_mode)
 {
+  (void)lock_mode;
   munlock(input_buffer, BUFFER_SIZE);
 }
 

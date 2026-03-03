@@ -204,6 +204,7 @@ void
 hikari_geometry_position_top_left(
     struct wlr_box *geometry, struct wlr_box *usable_area, int *x, int *y)
 {
+  (void)geometry;
   *x = usable_area->x;
   *y = usable_area->y;
 }

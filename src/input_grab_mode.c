@@ -93,6 +93,7 @@ static void
 button_handler(
     struct hikari_cursor *cursor, struct wlr_pointer_button_event *event)
 {
+  (void)cursor;
   wlr_seat_pointer_notify_button(
       hikari_server.seat, event->time_msec, event->button, event->state);
 }
@@ -135,5 +136,6 @@ hikari_input_grab_mode_init(struct hikari_input_grab_mode *input_grab_mode)
 void
 hikari_input_grab_mode_enter(struct hikari_view *view)
 {
+  (void)view;
   hikari_server.mode = (struct hikari_mode *)&hikari_server.input_grab_mode;
 }

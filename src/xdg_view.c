@@ -33,6 +33,7 @@ request_fullscreen_handler(struct wl_listener *listener, void *data);
 static void
 set_title_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xdg_view *xdg_view =
       wl_container_of(listener, xdg_view, set_title);
 
@@ -43,6 +44,7 @@ set_title_handler(struct wl_listener *listener, void *data)
 static void
 commit_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xdg_view *xdg_view =
       wl_container_of(listener, xdg_view, commit);
 
@@ -141,6 +143,7 @@ get_app_id(struct hikari_xdg_view *xdg_view)
 static void
 first_map(struct hikari_xdg_view *xdg_view, bool *focus)
 {
+  (void)focus;
   struct wlr_xdg_surface *xdg_surface = xdg_view->surface;
   assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
@@ -213,6 +216,7 @@ map(struct hikari_view *view, bool focus)
 static void
 map_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xdg_view *xdg_view = wl_container_of(listener, xdg_view, map);
 
   struct hikari_view *view = (struct hikari_view *)xdg_view;
@@ -247,6 +251,7 @@ unmap(struct hikari_view *view)
 static void
 unmap_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xdg_view *xdg_view = wl_container_of(listener, xdg_view, unmap);
 
   unmap((struct hikari_view *)xdg_view);
@@ -287,6 +292,7 @@ quit(struct hikari_view *view)
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xdg_view *xdg_view =
       wl_container_of(listener, xdg_view, destroy);
 
@@ -326,6 +332,7 @@ for_each_surface(struct hikari_node *node,
 static void
 destroy_popup_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   hikari_log_trace("DESTROY POPUP");
   struct hikari_xdg_popup *popup = wl_container_of(listener, popup, destroy);
 
@@ -367,6 +374,7 @@ new_popup_handler(struct wl_listener *listener, void *data)
 static void
 popup_map(struct wl_listener *listener, void *data)
 {
+  (void)data;
   hikari_log_trace("POPUP MAP");
 
   struct hikari_xdg_popup *xdg_popup =
@@ -380,6 +388,7 @@ popup_map(struct wl_listener *listener, void *data)
 static void
 popup_unmap(struct wl_listener *listener, void *data)
 {
+  (void)data;
   hikari_log_trace("POPUP UNMAP");
 
   struct hikari_xdg_popup *xdg_popup =
@@ -444,6 +453,7 @@ xdg_popup_create(struct wlr_xdg_popup *wlr_popup, struct hikari_view *parent)
 static void
 request_fullscreen_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_xdg_view *xdg_view =
       wl_container_of(listener, xdg_view, request_fullscreen);
 

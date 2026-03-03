@@ -22,6 +22,7 @@ execute_action(void (*action)(void *arg), void *arg)
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_switch *swtch = wl_container_of(listener, swtch, destroy);
 
   hikari_switch_fini(swtch);
@@ -31,6 +32,7 @@ destroy_handler(struct wl_listener *listener, void *data)
 static void
 toggle_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_switch *swtch = wl_container_of(listener, swtch, toggle);
 
   if (swtch->state == WLR_SWITCH_STATE_OFF) {

@@ -686,6 +686,7 @@ parse_action(const char *action_name,
     const ucl_object_t *action_obj,
     const char **command)
 {
+  (void)action_name;
   if (!ucl_object_tostring_safe(action_obj, command)) {
     hikari_log_error("configuration error: expected string for \"action\" command");
     return false;

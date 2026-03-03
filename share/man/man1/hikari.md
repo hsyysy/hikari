@@ -397,12 +397,13 @@ View actions
 
   Hides every other view except the focused one.
 
-* **view-pin-to-sheet-[0-9|alternate|current]**
+* **view-pin-to-sheet-[0-9|alternate|current|next|prev]**
 
   Pins the focused view to a given sheet. If the sheet is not currently a
   **current sheet** or sheet **0** the view becomes hidden. Pinning a view to
   the **current sheet** makes sense for **borrowed views** which takes this view
-  from its original view and pin it to the current one.
+  from its original view and pin it to the current one. Using **next** or
+  **prev** pins the view to the next or previous sheet respectively.
 
 * **view-quit**
 
@@ -490,7 +491,7 @@ Workspace actions
   Clears the current workspace and populates it with all **invisible** views
   that belong to that workspace.
 
-* **workspace-switch-to-sheet-[0-9|alternate|current]**
+* **workspace-switch-to-sheet-[0-9|alternate|current|next|prev]**
 
   Clears the current workspace and populates it with all views that are a member
   of the specified sheet. This action also sets the **current sheet** of the
@@ -498,7 +499,8 @@ Workspace actions
   be displayed on the bottom of the stacking order. Switching to the current
   sheet will reset the state of the sheet e.g. hiding borrowed views, showing
   views that have previously been hidden and hiding views that are in invisible
-  state.
+  state. Using **next** or **prev** switches to the next or previous sheet
+  respectively.
 
 * **workspace-switch-to-sheet-[next|prev]-inhabited**
 

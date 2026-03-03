@@ -38,6 +38,7 @@ key_handler(struct wl_listener *listener, void *data)
 static void
 modifiers_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_keyboard *keyboard =
       wl_container_of(listener, keyboard, modifiers);
 
@@ -49,6 +50,7 @@ modifiers_handler(struct wl_listener *listener, void *data)
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_keyboard *keyboard =
       wl_container_of(listener, keyboard, destroy);
 
@@ -71,6 +73,7 @@ struct keycode_matcher_state {
 static void
 match_keycode(struct xkb_keymap *keymap, xkb_keycode_t key, void *data)
 {
+  (void)keymap;
   struct keycode_matcher_state *matcher_state = data;
   xkb_keysym_t keysym = xkb_state_key_get_one_sym(matcher_state->state, key);
 

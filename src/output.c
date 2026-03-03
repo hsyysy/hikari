@@ -204,6 +204,7 @@ close_layers(struct wl_list *layers)
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_output *output = wl_container_of(listener, output, destroy);
 
   hikari_log_trace("DESTORY OUTPUT %p", output);

@@ -66,12 +66,17 @@ key_handler(
 
 static void
 modifiers_handler(struct hikari_keyboard *keyboard)
-{}
+{
+  (void)keyboard;
+}
 
 static void
 button_handler(
     struct hikari_cursor *cursor, struct wlr_pointer_button_event *event)
-{}
+{
+  (void)cursor;
+  (void)event;
+}
 
 static void
 cancel(void)
@@ -86,7 +91,9 @@ cancel(void)
 
 static void
 cursor_move(uint32_t time_msec)
-{}
+{
+  (void)time_msec;
+}
 
 void
 hikari_layout_select_mode_init(

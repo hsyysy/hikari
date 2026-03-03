@@ -114,7 +114,7 @@ hikari_input_buffer_replace(
   hikari_input_buffer_clear(input_buffer);
   char *c = content;
 
-  for (int i = 0; i < sizeof(input_buffer->buffer) && *c != '\0'; i++) {
+  for (size_t i = 0; i < sizeof(input_buffer->buffer) && *c != '\0'; i++) {
     hikari_input_buffer_add_char(input_buffer, *c);
     c++;
   }

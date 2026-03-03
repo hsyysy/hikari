@@ -415,6 +415,7 @@ void
 hikari_view_init(
     struct hikari_view *view, bool child, struct hikari_workspace *workspace)
 {
+  (void)workspace;
   hikari_log_trace("VIEW INIT %p", view);
   view->flags = hikari_view_hidden_flag;
   view->border.state = HIKARI_BORDER_INACTIVE;
@@ -1092,6 +1093,7 @@ queue_tile(struct hikari_view *view,
     struct hikari_tile *tile,
     bool center)
 {
+  (void)layout;
   assert(!hikari_view_is_dirty(view));
 
   struct hikari_operation *op = &view->pending_operation;
@@ -1598,6 +1600,7 @@ hikari_view_exchange(struct hikari_view *from, struct hikari_view *to)
 static void
 destroy_subsurface_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_view_subsurface *view_subsurface =
       wl_container_of(listener, view_subsurface, destroy);
 
@@ -1665,6 +1668,7 @@ damage_single_surface(struct wlr_surface *surface, int sx, int sy, void *data)
 static void
 commit_child_handler(struct wl_listener *listener, void *data)
 {
+  (void)data;
   struct hikari_view_child *view_child =
       wl_container_of(listener, view_child, commit);
 
