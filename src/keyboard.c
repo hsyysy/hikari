@@ -18,7 +18,7 @@ update_mod_state(struct hikari_keyboard *keyboard)
       wlr_keyboard_get_modifiers(keyboard->keyboard);
 
   bool was_pressed = hikari_server.keyboard_state.mod_pressed;
-  bool is_pressed = modifier_keys & WLR_MODIFIER_LOGO;
+  bool is_pressed = modifier_keys & (WLR_MODIFIER_LOGO | WLR_MODIFIER_ALT);
 
   hikari_server.keyboard_state.modifiers = modifier_keys;
   hikari_server.keyboard_state.mod_released = was_pressed && !is_pressed;
