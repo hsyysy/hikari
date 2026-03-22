@@ -131,8 +131,8 @@ endif
 CFLAGS += -Wall -I. -Iinclude -DHIKARI_ETC_PREFIX=$(ETC_PREFIX)
 CFLAGS += -MMD -MP
 
-WLROOTS_CFLAGS := $(shell $(PKG_CONFIG) --cflags wlroots-0.20)
-WLROOTS_LIBS := $(shell $(PKG_CONFIG) --libs wlroots-0.20)
+WLROOTS_CFLAGS := $(shell $(PKG_CONFIG) --cflags wlroots-0.21)
+WLROOTS_LIBS := $(shell $(PKG_CONFIG) --libs wlroots-0.21)
 
 WLROOTS_CFLAGS += -DWLR_USE_UNSTABLE=1
 

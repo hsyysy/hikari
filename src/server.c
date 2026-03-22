@@ -688,7 +688,7 @@ new_xdg_toplevel_handler(struct wl_listener *listener, void *data)
 static void
 setup_xdg_shell(struct hikari_server *server)
 {
-  server->xdg_shell = wlr_xdg_shell_create(server->display, 6);
+  server->xdg_shell = wlr_xdg_shell_create(server->display, 7);
 
   server->new_xdg_toplevel.notify = new_xdg_toplevel_handler;
   wl_signal_add(
@@ -710,7 +710,7 @@ new_layer_shell_surface_handler(struct wl_listener *listener, void *data)
 static void
 setup_layer_shell(struct hikari_server *server)
 {
-  server->layer_shell = wlr_layer_shell_v1_create(server->display, 4);
+  server->layer_shell = wlr_layer_shell_v1_create(server->display, 5);
 
   wl_signal_add(&server->layer_shell->events.new_surface,
       &server->new_layer_shell_surface);

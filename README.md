@@ -47,7 +47,7 @@ repository, breaking changes might be encountered. These are documented in the
 
 ### Dependencies
 
-* wlroots-0.20
+* wlroots-0.21
 * pango
 * cairo
 * libinput
