@@ -601,7 +601,7 @@ setup_decorations(struct hikari_server *server)
   server->new_decoration.notify = server_decoration_handler;
 
   server->xdg_decoration_manager =
-      wlr_xdg_decoration_manager_v1_create(server->display);
+      wlr_xdg_decoration_manager_v1_create(server->display, 1);
   wl_signal_add(&server->xdg_decoration_manager->events.new_toplevel_decoration,
       &server->new_toplevel_decoration);
   server->new_toplevel_decoration.notify = new_toplevel_decoration_handler;
