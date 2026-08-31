@@ -326,24 +326,10 @@ topmost_of(struct wl_list *layers,
   wl_list_for_each (layer, layers, layer_surfaces) {
     struct hikari_node *out_node = (struct hikari_node *)layer;
 
-    struct wlr_layer_surface_v1_state *state = &layer->surface->current;
-
     struct wlr_surface *out_surface =
         hikari_node_surface_at(out_node, ox, oy, &out_sx, &out_sy);
 
-    if (state->keyboard_interactive) {
-      if (out_surface != NULL) {
-        *surface = out_surface;
-      } else {
-        *surface = layer->surface->surface;
-      }
-
-      *sx = out_sx;
-      *sy = out_sy;
-      *node = out_node;
-
-      return true;
-    } else if (out_surface != NULL) {
+    if (out_surface != NULL) {
       *surface = out_surface;
 
       *sx = out_sx;

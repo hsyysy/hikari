@@ -76,7 +76,7 @@ OBJS = \
 	workspace.o \
 	xdg_view.o
 
-ifdef WITH_XWAYLAND
+ifeq ($(WITH_XWAYLAND),YES)
 OBJS += \
 	xwayland_unmanaged_view.o \
 	xwayland_view.o
@@ -102,7 +102,7 @@ ifdef WITH_POSIX_C_SOURCE
 CFLAGS += -D_POSIX_C_SOURCE=200809L
 endif
 
-ifdef WITH_XWAYLAND
+ifeq ($(WITH_XWAYLAND),YES)
 CFLAGS += -DHAVE_XWAYLAND=1
 endif
 
