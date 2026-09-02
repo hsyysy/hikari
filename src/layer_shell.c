@@ -212,7 +212,9 @@ hikari_layer_init(
 
   wl_list_insert(&output->layers[layer->layer], &layer->layer_surfaces);
 
-  calculate_geometry(layer);
+  /* The layer-shell protocol requires the client to commit its initial
+   * state before the compositor sends the first configure event.  Geometry
+   * is calculated from commit_handler once that commit arrives. */
 }
 
 void
