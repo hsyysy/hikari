@@ -393,9 +393,12 @@ queue_reset(struct hikari_view *view, bool center)
       hikari_view_is_tiled(view) ? !hikari_tile_is_attached(view->tile) : true);
 }
 
-static void
-clear_focus(struct hikari_view *view)
+void
+hikari_view_clear_focus(struct hikari_view *view)
 {
+  assert(view != NULL);
+  assert(!hikari_view_is_unmanaged(view));
+
   if (hikari_view_is_focus_view(view)) {
     if (hikari_view_has_focus(view)) {
       assert(!hikari_server_in_lock_mode());
@@ -406,6 +409,11 @@ clear_focus(struct hikari_view *view)
 
       hikari_workspace_focus_view(hikari_server.workspace, NULL);
     } else {
+      // unlike `hikari_workspace_focus_view` nothing deactivates the view
+      // here, leaving it activated makes a client that draws its own
+      // decorations look focused next to the actual focus view
+      hikari_view_activate(view, false);
+
       view->sheet->workspace->focus_view = NULL;
     }
   }
@@ -434,6 +442,7 @@ hikari_view_init(
   view->current_unmaximized_geometry = &view->geometry;
   view->surface_geometry_x = 0;
   view->surface_geometry_y = 0;
+  view->shown = NULL;
 
   hikari_view_unset_dirty(view);
   view->pending_operation.tile = NULL;
@@ -982,6 +991,10 @@ hikari_view_show(struct hikari_view *view)
   hikari_log_debug("hikari_view_show: done, is_first=%d", is_first_view(view));
 
   assert(is_first_view(view));
+
+  if (view->shown != NULL) {
+    view->shown(view);
+  }
 }
 
 void
@@ -993,7 +1006,7 @@ hikari_view_hide(struct hikari_view *view)
 
   hikari_log_trace("HIDE %p", view);
 
-  clear_focus(view);
+  hikari_view_clear_focus(view);
   hide(view);
 
   hikari_view_damage_whole(view);
@@ -1152,7 +1165,7 @@ commit_full_maximize(
 }
 
 static void
-queue_full_maximize(struct hikari_view *view)
+queue_full_maximize(struct hikari_view *view, bool center)
 {
   assert(view != NULL);
   assert(!hikari_view_is_hidden(view));
@@ -1162,7 +1175,7 @@ queue_full_maximize(struct hikari_view *view)
 
   op->type = HIKARI_OPERATION_TYPE_FULL_MAXIMIZE;
   op->geometry = output->usable_area;
-  op->center = true;
+  op->center = center;
 
   resize(view, op, commit_full_maximize);
 }
@@ -1183,7 +1196,7 @@ commit_unmaximize(struct hikari_view *view, struct hikari_operation *operation)
 }
 
 static void
-queue_unmaximize(struct hikari_view *view)
+queue_unmaximize(struct hikari_view *view, bool center)
 {
   assert(view != NULL);
   assert(!hikari_view_is_hidden(view));
@@ -1191,7 +1204,7 @@ queue_unmaximize(struct hikari_view *view)
   struct hikari_operation *op = &view->pending_operation;
 
   op->type = HIKARI_OPERATION_TYPE_UNMAXIMIZE;
-  op->center = true;
+  op->center = center;
 
   if (view->tile != NULL) {
     op->geometry = view->tile->view_geometry;
@@ -1213,9 +1226,27 @@ hikari_view_toggle_full_maximize(struct hikari_view *view)
   }
 
   if (hikari_view_is_fully_maximized(view)) {
-    queue_unmaximize(view);
+    queue_unmaximize(view, true);
   } else {
-    queue_full_maximize(view);
+    queue_full_maximize(view, true);
+  }
+}
+
+void
+hikari_view_set_full_maximized(struct hikari_view *view, bool maximized)
+{
+  assert(view != NULL);
+  assert(!hikari_view_is_hidden(view));
+
+  if (hikari_view_is_dirty(view) ||
+      hikari_view_is_fully_maximized(view) == maximized) {
+    return;
+  }
+
+  if (maximized) {
+    queue_full_maximize(view, false);
+  } else {
+    queue_unmaximize(view, false);
   }
 }
 
@@ -1352,11 +1383,11 @@ hikari_view_toggle_vertical_maximize(struct hikari_view *view)
         break;
 
       case HIKARI_MAXIMIZATION_VERTICALLY_MAXIMIZED:
-        queue_unmaximize(view);
+        queue_unmaximize(view, true);
         break;
 
       case HIKARI_MAXIMIZATION_HORIZONTALLY_MAXIMIZED:
-        queue_full_maximize(view);
+        queue_full_maximize(view, true);
         break;
     }
   } else {
@@ -1377,11 +1408,11 @@ hikari_view_toggle_horizontal_maximize(struct hikari_view *view)
         break;
 
       case HIKARI_MAXIMIZATION_VERTICALLY_MAXIMIZED:
-        queue_full_maximize(view);
+        queue_full_maximize(view, true);
         break;
 
       case HIKARI_MAXIMIZATION_HORIZONTALLY_MAXIMIZED:
-        queue_unmaximize(view);
+        queue_unmaximize(view, true);
         break;
     }
   } else {
@@ -1413,7 +1444,7 @@ hikari_view_evacuate(struct hikari_view *view, struct hikari_sheet *sheet)
 {
   hikari_log_trace("EVACUATE VIEW %p", view);
 
-  clear_focus(view);
+  hikari_view_clear_focus(view);
 
   view->output = sheet->workspace->output;
   view->sheet = sheet;

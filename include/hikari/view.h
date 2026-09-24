@@ -77,6 +77,11 @@ struct hikari_view {
   void (*quit)(struct hikari_view *);
   void (*constraints)(struct hikari_view *, int *, int *, int *, int *);
 
+  // called at the end of `hikari_view_show`, to let a view type catch up on
+  // work that could not be done while the view was hidden. the view can still
+  // be dirty, a hook that wants to resize has to check for it.
+  void (*shown)(struct hikari_view *);
+
   struct wl_listener new_subsurface;
 };
 
@@ -253,6 +258,18 @@ hikari_view_refresh_geometry(
 
 void
 hikari_view_activate(struct hikari_view *view, bool active);
+
+// clears the focus of the view if it is the focus view of its workspace, the
+// focus of the current workspace is not affected
+void
+hikari_view_clear_focus(struct hikari_view *view);
+
+// fully maximizes or unmaximizes the view without moving the cursor, for
+// maximizations hikari applies on behalf of a client. unlike
+// `hikari_view_toggle_full_maximize` this must not warp the pointer, doing so
+// for a request the user did not make disturbs the current input mode.
+void
+hikari_view_set_full_maximized(struct hikari_view *view, bool maximized);
 
 void
 hikari_view_migrate(struct hikari_view *view,

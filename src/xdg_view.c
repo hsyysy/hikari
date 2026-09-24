@@ -28,6 +28,12 @@ static void
 new_popup_handler(struct wl_listener *listener, void *data);
 
 static void
+apply_fullscreen(struct hikari_xdg_view *xdg_view, bool allow_migrate);
+
+static void
+fullscreen_request(struct hikari_xdg_view *xdg_view);
+
+static void
 request_fullscreen_handler(struct wl_listener *listener, void *data);
 
 static void
@@ -96,6 +102,19 @@ commit_handler(struct wl_listener *listener, void *data)
         break;
     }
     hikari_view_commit_pending_operation(view, &new_geometry);
+
+    // the user took the maximization of a fullscreen view into his own hands,
+    // hikari has nothing left to undo once the client leaves fullscreen
+    if (xdg_view->fullscreen_maximized &&
+        !hikari_view_is_fully_maximized(view)) {
+      xdg_view->fullscreen_maximized = false;
+    }
+
+    // the view has settled, a fullscreen request that was waiting for it can be
+    // applied now
+    if (xdg_view->fullscreen_pending) {
+      apply_fullscreen(xdg_view, true);
+    }
   } else {
     struct wlr_box *geometry = hikari_view_geometry(view);
     struct hikari_output *output = view->output;
@@ -230,6 +249,15 @@ map_handler(struct wl_listener *listener, void *data)
   }
 
   map(view, focus);
+
+  struct wlr_xdg_toplevel *toplevel = xdg_view->surface->toplevel;
+
+  // wlroots suppresses `events.request_fullscreen` until the xdg surface is
+  // initialized, a client that requests fullscreen before its initial commit
+  // has to be acknowledged here
+  if (toplevel->requested.fullscreen && !toplevel->current.fullscreen) {
+    fullscreen_request(xdg_view);
+  }
 }
 
 static void
@@ -242,6 +270,11 @@ unmap(struct hikari_view *view)
   assert(xdg_view->surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
   hikari_view_unmap(view);
+
+  // the flags describe the fullscreen state of the surface that is going away,
+  // a remap starts over with `map_handler` looking at the request again
+  xdg_view->fullscreen_pending = false;
+  xdg_view->fullscreen_maximized = false;
 
   wl_list_remove(&xdg_view->set_title.link);
   wl_list_remove(&xdg_view->request_fullscreen.link);
@@ -450,6 +483,150 @@ xdg_popup_create(struct wlr_xdg_popup *wlr_popup, struct hikari_view *parent)
   popup_unconstrain(popup);
 }
 
+static struct hikari_output *
+resolve_fullscreen_output(struct wlr_xdg_toplevel *toplevel)
+{
+  struct wlr_output *wlr_output = toplevel->requested.fullscreen_output;
+
+  if (wlr_output == NULL) {
+    return NULL;
+  }
+
+  struct hikari_output *output = wlr_output->data;
+
+  // a client can request fullscreen on any output it has a handle for, even on
+  // one hikari does not render on
+  if (output == NULL || !output->enabled) {
+    return NULL;
+  }
+
+  return output;
+}
+
+// migrating a view is a user level operation, it shows and raises the view and
+// `hikari_server_migrate_focus_view` even makes the workspace of the output the
+// current one. none of that may be driven by a client while the view is forced
+// visible by lock mode or while the user is in a mode that keeps state about
+// the current workspace.
+static bool
+can_migrate_for_fullscreen(struct hikari_view *view)
+{
+  return hikari_server_in_normal_mode() && !hikari_view_is_forced(view);
+}
+
+// hikari arranges the geometry of its views on its own, so `wlr_xdg_toplevel`
+// acknowledging a fullscreen request does not make a view fill an output by
+// itself. the request is applied like `view-toggle-maximize-full` does, but
+// without moving the cursor, on the output the client asked for. a view that is
+// hidden or waits for a commit cannot be maximized, so the request stays
+// pending until the view has settled or is shown again.
+static void
+apply_pending_fullscreen(struct hikari_xdg_view *xdg_view, bool allow_migrate)
+{
+  struct hikari_view *view = &xdg_view->view;
+
+  if (hikari_view_is_hidden(view) || hikari_view_is_dirty(view)) {
+    return;
+  }
+
+  struct wlr_xdg_toplevel *toplevel = xdg_view->surface->toplevel;
+
+  if (!toplevel->requested.fullscreen) {
+    xdg_view->fullscreen_pending = false;
+
+    // only undo the maximize hikari applied for the fullscreen request, a view
+    // the user has maximized himself stays maximized
+    if (!xdg_view->fullscreen_maximized) {
+      return;
+    }
+
+    xdg_view->fullscreen_maximized = false;
+
+    hikari_view_set_full_maximized(view, false);
+
+    return;
+  }
+
+  struct hikari_output *output = resolve_fullscreen_output(toplevel);
+
+  if (allow_migrate && output != NULL && output != view->output &&
+      can_migrate_for_fullscreen(view)) {
+    double lx = output->geometry.x + output->geometry.width / 2.0;
+    double ly = output->geometry.y + output->geometry.height / 2.0;
+
+    if (hikari_view_has_focus(view)) {
+      hikari_server_migrate_focus_view(output, lx, ly, false);
+    } else {
+      // a view that is the focus view of another workspace has to lose that
+      // focus first, `hikari_view_migrate` does not take care of it
+      hikari_view_clear_focus(view);
+
+      hikari_view_migrate(view,
+          output->workspace->sheet,
+          (int)(lx - output->geometry.x),
+          (int)(ly - output->geometry.y),
+          false);
+    }
+
+    // migrating resets the view, so the maximize has to wait until the reset
+    // has been committed
+    if (hikari_view_is_dirty(view)) {
+      return;
+    }
+  }
+
+  xdg_view->fullscreen_pending = false;
+
+  if (!hikari_view_is_fully_maximized(view)) {
+    xdg_view->fullscreen_maximized = true;
+
+    hikari_view_set_full_maximized(view, true);
+  }
+}
+
+static void
+apply_fullscreen(struct hikari_xdg_view *xdg_view, bool allow_migrate)
+{
+  // `hikari_view_migrate` shows the view, which calls back in through the
+  // `shown` hook
+  if (xdg_view->fullscreen_applying) {
+    return;
+  }
+
+  xdg_view->fullscreen_applying = true;
+  apply_pending_fullscreen(xdg_view, allow_migrate);
+  xdg_view->fullscreen_applying = false;
+}
+
+static void
+shown(struct hikari_view *view)
+{
+  struct hikari_xdg_view *xdg_view = (struct hikari_xdg_view *)view;
+
+  // the view was not visible when the client requested fullscreen, nothing
+  // else makes the request happen once the user brings the view up.
+  //
+  // the output the client asked for is ignored here. views are shown from
+  // within iterations over sheets, groups and layouts, migrating one would
+  // relink the very lists that are being walked. dragging a view the user just
+  // brought up onto another output is not wanted either.
+  if (xdg_view->fullscreen_pending) {
+    apply_fullscreen(xdg_view, false);
+  }
+}
+
+static void
+fullscreen_request(struct hikari_xdg_view *xdg_view)
+{
+  struct wlr_xdg_toplevel *toplevel = xdg_view->surface->toplevel;
+
+  wlr_xdg_toplevel_set_fullscreen(toplevel, toplevel->requested.fullscreen);
+
+  xdg_view->fullscreen_pending = true;
+
+  apply_fullscreen(xdg_view, true);
+}
+
 static void
 request_fullscreen_handler(struct wl_listener *listener, void *data)
 {
@@ -457,9 +634,7 @@ request_fullscreen_handler(struct wl_listener *listener, void *data)
   struct hikari_xdg_view *xdg_view =
       wl_container_of(listener, xdg_view, request_fullscreen);
 
-  struct wlr_xdg_toplevel *toplevel = xdg_view->surface->toplevel;
-
-  wlr_xdg_toplevel_set_fullscreen(toplevel, toplevel->requested.fullscreen);
+  fullscreen_request(xdg_view);
 }
 
 static void
@@ -491,6 +666,10 @@ hikari_xdg_view_init(struct hikari_xdg_view *xdg_view,
 
   hikari_view_init(&xdg_view->view, child, workspace);
 
+  xdg_view->fullscreen_pending = false;
+  xdg_view->fullscreen_maximized = false;
+  xdg_view->fullscreen_applying = false;
+
   hikari_log_trace("NEW XDG %p", xdg_view);
 
   xdg_view->view.node.surface_at = surface_at;
@@ -520,6 +699,7 @@ hikari_xdg_view_init(struct hikari_xdg_view *xdg_view,
   xdg_view->view.resize = resize;
   xdg_view->view.quit = quit;
   xdg_view->view.constraints = constraints;
+  xdg_view->view.shown = shown;
 #ifdef HAVE_XWAYLAND
   xdg_view->view.move = NULL;
   xdg_view->view.move_resize = NULL;

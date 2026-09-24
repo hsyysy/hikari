@@ -21,6 +21,19 @@ struct hikari_xdg_view {
   struct wl_listener new_popup;
   struct wl_listener set_title;
   struct wl_listener request_fullscreen;
+
+  // a fullscreen request cannot be applied while the view is hidden or waits
+  // for a commit, so it stays pending until the view has settled or is shown
+  bool fullscreen_pending;
+
+  // the view is fully maximized because of a fullscreen request, so the
+  // maximize has to be undone once the client leaves fullscreen.
+  // maximizations done by the user are not touched.
+  bool fullscreen_maximized;
+
+  // guards `apply_fullscreen` against re-entering itself, migrating a view
+  // shows it and showing a view retries the pending request
+  bool fullscreen_applying;
 };
 
 void
