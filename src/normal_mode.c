@@ -138,10 +138,14 @@ dump_debug(struct hikari_server *server)
 }
 #endif
 
+/* Note: this runs on **every key event**, so the call must carry the virtual
+ * keyboard guard -- otherwise the physical and virtual keyboards alternate and
+ * each key triggers two full keymap broadcasts.
+ * See the comment on hikari_keyboard_set_seat_keyboard(). */
 static void
 modifiers_handler(struct hikari_keyboard *keyboard)
 {
-  wlr_seat_set_keyboard(hikari_server.seat, keyboard->keyboard);
+  hikari_keyboard_set_seat_keyboard(keyboard);
   struct hikari_view *focus_view = hikari_server.workspace->focus_view;
 
   if (hikari_server.keyboard_state.mod_released) {
@@ -328,7 +332,11 @@ key_handler(
     }
   }
 
-  wlr_seat_set_keyboard(hikari_server.seat, keyboard->keyboard);
+  /* Note: this runs on **every key event**, so the call must carry the virtual
+   * keyboard guard -- otherwise the physical and virtual keyboards alternate
+   * and each key triggers two full keymap broadcasts.
+   * See the comment on hikari_keyboard_set_seat_keyboard(). */
+  hikari_keyboard_set_seat_keyboard(keyboard);
 
   struct wlr_input_method_v2 *im =
       hikari_server.input_method_relay.input_method;

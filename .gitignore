@@ -1,2 +1,6 @@
 *.o
 *.d
+tests/popup_placement
+.build-flags
+/hikari
+/hikari-unlocker

@@ -42,6 +42,13 @@ void
 hikari_keyboard_configure_bindings(
     struct hikari_keyboard *keyboard, struct wl_list *bindings);
 
+/* Point the seat's keyboard at `keyboard`, **except for virtual keyboards**
+ * (see the long comment at the implementation).
+ * Every per-key/per-modifier path must go through this instead of calling
+ * wlr_seat_set_keyboard() directly. */
+void
+hikari_keyboard_set_seat_keyboard(struct hikari_keyboard *keyboard);
+
 typedef void (*hikari_keysym_iterator)(
     struct hikari_keyboard *keyboard, uint32_t keycode, xkb_keysym_t sym);
 

@@ -630,6 +630,15 @@ render_input_method_popups(struct hikari_renderer *renderer)
     if (!popup->mapped) {
       continue;
     }
+
+    /* popup->geometry is output-local, so only the owning output may draw it.
+     * A NULL owner means "not determined yet" -- keep drawing it rather than
+     * risk the popup never appearing at all. */
+    if (popup->output != NULL &&
+        popup->output->wlr_output != renderer->wlr_output) {
+      continue;
+    }
+
     renderer->geometry = &popup->geometry;
     wlr_surface_for_each_surface(
         popup->popup->surface, render_surface, renderer);

@@ -84,7 +84,7 @@ endif
 
 WAYLAND_PROTOCOLS := $(shell $(PKG_CONFIG) --variable pkgdatadir wayland-protocols)
 
-.PHONY: distclean clean clean-doc doc dist install uninstall all
+.PHONY: distclean clean clean-doc doc dist install uninstall all test smoke
 
 VPATH = src
 
@@ -172,9 +172,99 @@ endif
 
 DEPS = $(OBJS:.o=.d)
 
+# Configuration stamp -- see the long comment further down for the mechanism.
+# It must be defined HERE, before any rule references it: make expands a rule's
+# prerequisites when it parses the rule, so a rule written above this line would
+# silently see an empty string and lose the dependency entirely. (That is
+# exactly what happened to tests/popup_placement when this lived further down.)
+CFLAGS_STAMP = .build-flags
+
 all: hikari hikari-unlocker
 
+# Unit tests that need no compositor. tests/popup_placement.c includes the real
+# hikari_input_popup_place() from include/hikari/input_method_relay.h, so this
+# exercises the shipped code, not a copy.
+# ASAN_OPTIONS: the test binary inherits whatever sanitizer flags the tree was
+# configured with, and a DEBUG build turns it into an ASan binary. Leak
+# detection then runs at exit and fails outright in environments where LSan
+# cannot work (e.g. under ptrace), so the assertions all pass and make still
+# reports an error. This test exercises a pure function and allocates nothing,
+# so the leak check buys nothing -- disable it rather than let the target go
+# red for environmental reasons, which is how a check stops being run at all.
+test: tests/popup_placement
+	@ASAN_OPTIONS=detect_leaks=0 ./tests/popup_placement
+
+tests/popup_placement: tests/popup_placement.c include/hikari/input_method_relay.h $(CFLAGS_STAMP)
+	$(CC) $(CFLAGS) -o $@ $<
+
+# Pre-flight check: boot under the headless backend and make sure startup
+# survives. Exists because mixing build configurations (e.g. rebuilding only
+# some objects after toggling WITH_LAYERSHELL) produces a binary whose struct
+# layouts disagree -- hikari then segfaults during init and takes the whole
+# session down with it. The compiler cannot catch this; booting it can.
+# Exit 124 means it was still alive when timeout fired, which is the pass case.
+# XDG_RUNTIME_DIR is created here rather than inherited so the check does not
+# depend on the caller's environment (CI/containers often lack a writable one,
+# and a spurious failure would train people to ignore the check). The log is
+# printed on failure so a real startup crash can be told apart from an
+# environment problem at a glance.
+smoke: hikari
+	@rt=$$(mktemp -d) && chmod 700 $$rt; \
+	log=$$(mktemp); \
+	timeout 5 env XDG_RUNTIME_DIR=$$rt WLR_BACKENDS=headless WLR_RENDERER=pixman \
+	  WLR_LIBINPUT_NO_DEVICES=1 ./hikari -c tests/smoke.conf -a /bin/true \
+	  >$$log 2>&1; \
+	rc=$$?; \
+	rm -rf $$rt; \
+	if [ $$rc -eq 124 ]; then \
+	  rm -f $$log; \
+	  echo "smoke: OK (startup survived)"; \
+	else \
+	  echo "smoke: FAILED (exit $$rc; 139 = SIGSEGV)"; \
+	  echo "--- last 20 log lines ---"; \
+	  tail -n 20 $$log; \
+	  rm -f $$log; \
+	  exit 1; \
+	fi
+
 -include $(DEPS)
+
+# --- Configuration stamp -----------------------------------------------------
+# Every object must be built with the same configuration. struct hikari_server
+# has HAVE_LAYERSHELL-conditional members, so mixing objects built with
+# different feature flags yields a binary whose struct layouts disagree -- it
+# segfaults during init (wl_signal_add <- hikari_input_method_relay_init) and
+# takes the whole session down. Neither the compiler nor the linker can catch
+# this: each .o is individually valid, and make only rebuilds objects whose
+# *source* is newer, not whose *flags* changed.
+#
+# This has happened three times. The stamp is rewritten only when the compile
+# command changes, and every object depends on it, so a configuration change
+# rebuilds everything while an unchanged configuration rebuilds nothing.
+#
+# The stamp covers the whole built-in %.o: %.c rule, which is
+#   COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+# -- not just CFLAGS. Stamping CFLAGS alone would still let a changed CC
+# (gcc -> clang) or CPPFLAGS mix objects silently.
+#
+# Consequence to be aware of: the WITH_* flags are command-line variables, so
+# `make test` / `make smoke` invoked *without* them are a different
+# configuration and will trigger a full rebuild. Pass the same flags (or run
+# ./build.sh) when using those targets.
+
+.PHONY: FORCE
+FORCE:
+
+$(CFLAGS_STAMP): FORCE
+	@if [ -f $@ ] && \
+	    printf '%s\n' '$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH)' | cmp -s - $@; then \
+	  :; \
+	else \
+	  [ -f $@ ] && echo "build: configuration changed -- rebuilding all objects"; \
+	  printf '%s\n' '$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH)' > $@; \
+	fi
+
+$(OBJS): $(CFLAGS_STAMP)
 
 version.h:
 	echo "#define HIKARI_VERSION \"$(VERSION)\"" > version.h
@@ -188,6 +278,11 @@ xdg-shell-protocol.h:
 wlr-layer-shell-unstable-v1-protocol.h:
 	wayland-scanner server-header protocol/wlr-layer-shell-unstable-v1.xml $@
 
+# Deliberately exempt from the configuration stamp: hikari_unlocker.c includes
+# only system headers (pwd.h, security/pam_appl.h, ...) and no hikari header, so
+# it has no struct whose layout depends on a WITH_* flag. It also needs none of
+# the wlroots/pango includes CFLAGS carries, which is why it uses CFLAGS_EXTRA.
+# Nothing here can be mixed up by a configuration change.
 hikari-unlocker: hikari_unlocker.c
 	$(CC) $(CFLAGS_EXTRA) $(LDFLAGS_EXTRA) -o hikari-unlocker hikari_unlocker.c -lpam
 
@@ -203,6 +298,8 @@ clean: clean-doc
 	@echo "cleaning executables"
 	@rm hikari 2> /dev/null ||:
 	@rm hikari-unlocker 2> /dev/null ||:
+	@rm -f tests/popup_placement tests/popup_placement.d 2> /dev/null ||:
+	@rm -f $(CFLAGS_STAMP) 2> /dev/null ||:
 
 share/man/man1/hikari.1:
 	pandoc -M title:"HIKARI(1) $(VERSION) | hikari - Wayland Compositor" -s \

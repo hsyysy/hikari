@@ -4,6 +4,7 @@
 
 #include <wlr/backend.h>
 
+#include <hikari/input_method_relay.h>
 #include <hikari/memory.h>
 #include <hikari/log.h>
 #include <hikari/renderer.h>
@@ -208,6 +209,10 @@ destroy_handler(struct wl_listener *listener, void *data)
   struct hikari_output *output = wl_container_of(listener, output, destroy);
 
   hikari_log_trace("DESTORY OUTPUT %p", output);
+
+  /* Must happen before the output is freed: popups may still hold a pointer to
+   * it (see the declaration for why). */
+  hikari_input_method_relay_output_destroyed(output);
 
   hikari_output_fini(output);
   hikari_free(output);

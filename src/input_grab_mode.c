@@ -72,7 +72,11 @@ key_handler(
     }
   }
 
-  wlr_seat_set_keyboard(hikari_server.seat, keyboard->keyboard);
+  /* Same as normal_mode.c: this is a per-key path, so it must carry the
+   * virtual keyboard guard -- otherwise the physical and virtual keyboards
+   * alternate and trigger full keymap broadcasts.
+   * See the comment on hikari_keyboard_set_seat_keyboard(). */
+  hikari_keyboard_set_seat_keyboard(keyboard);
 
   struct wlr_input_method_v2 *im =
       hikari_server.input_method_relay.input_method;

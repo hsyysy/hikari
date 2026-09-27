@@ -47,6 +47,61 @@ modifiers_handler(struct wl_listener *listener, void *data)
   hikari_server.mode->modifiers_handler(keyboard);
 }
 
+/* Point the seat's keyboard at `keyboard`, **except for virtual keyboards**.
+ *
+ * Why this guard exists: the call sites (key_handler / modifiers_handler in
+ * normal_mode.c, key_handler in input_grab_mode.c) run on **every** key and
+ * modifier event, and wlr_seat_set_keyboard() decides whether the keymap
+ * changed by **comparing pointers** (wlroots types/seat/wlr_seat_keyboard.c:
+ *   `seat->keyboard_state.keyboard->keymap != keyboard->keymap`).
+ *
+ * With an input method running, the physical keyboard and the virtual keyboard
+ * it drives are **two distinct wlr_keyboard objects**, so their keymap pointers
+ * never compare equal. Every time the two alternate -- which is once per key --
+ * this is taken as "the keymap changed" and the full 35 KB keymap is
+ * rebroadcast to **every** client that created a wl_keyboard
+ * (seat_client_send_keymap() does not check focus), forcing each of them to
+ * recompile it with xkbcommon.
+ *
+ * Measured (keymap-count probe in the input-method repo, 40 key events):
+ *   without an IM -> 1 broadcast; with an IM -> 81. That is 2 per key event,
+ *   pure waste.
+ *
+ * A virtual keyboard does not need to become the seat keyboard anyway.
+ * The three wlroots facts this rests on, with line numbers from wlroots
+ * 0.21.0-dev -- re-check them on upgrade:
+ *
+ *   1. wlr_seat_keyboard_notify_key() (types/seat/wlr_seat_keyboard.c:333) only
+ *      hands the event to the grab, and the default grab's
+ *      default_keyboard_key() (:23) just calls wlr_seat_keyboard_send_key().
+ *      No keymap is read anywhere on that path.
+ *   2. wlr_seat_keyboard_notify_modifiers() (:327) likewise forwards to the
+ *      grab, and default_keyboard_modifiers() (:28) calls
+ *      wlr_seat_keyboard_send_modifiers(). The modifier state is passed **by
+ *      value**, so nothing is written back into the seat keyboard -- unlike
+ *      wlr_keyboard_notify_modifiers() (types/wlr_keyboard.c:83), which *does*
+ *      update the keyboard state. Do not confuse the two.
+ *   3. The seat keyboard is only consulted to decide which keymap a newly
+ *      focused client receives (wlr_seat_keyboard_enter), and both keymaps have
+ *      identical content.
+ *
+ * The pointer comparison that causes the waste in the first place is at
+ * types/seat/wlr_seat_keyboard.c:126.
+ *
+ * Exception: when the seat has **no keyboard at all** (physical keyboard
+ * unplugged) it still has to be set, otherwise clients focused later never
+ * receive a keymap and cannot translate keys. */
+void
+hikari_keyboard_set_seat_keyboard(struct hikari_keyboard *keyboard)
+{
+  if (keyboard->is_virtual &&
+      wlr_seat_get_keyboard(hikari_server.seat) != NULL) {
+    return;
+  }
+
+  wlr_seat_set_keyboard(hikari_server.seat, keyboard->keyboard);
+}
+
 static void
 destroy_handler(struct wl_listener *listener, void *data)
 {
