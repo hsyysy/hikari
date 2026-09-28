@@ -12,7 +12,7 @@ if [ -z "$XDG_RUNTIME_DIR" ]; then
 fi
 
 # --- fcitx5 environment ---
-export XMODIFIERS=@im=fcitx
+# export XMODIFIERS=@im=fcitx
 # Uncomment below if some apps don't pick up the input method:
 # export GTK_IM_MODULE=fcitx
 # export QT_IM_MODULE=fcitx

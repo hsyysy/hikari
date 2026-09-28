@@ -55,16 +55,18 @@ repository, breaking changes might be encountered. These are documented in the
 * pixman
 * libucl
 * evdev-proto
+* PAM (optional, for `hikari-unlocker`)
 * XWayland (optional, runtime dependency)
 
 ### Compiling and Installing
 
-The build process will produce two binaries `hikari` and `hikari-unlocker`. The
-latter is used to check credentials for unlocking the screen, which needs to be
-installed with root setuid.  `hikari` can rely on `seatd`, `(e)logind` or other
-mechanisms to gain root privileges when required; however, if needed it can
-also be installed with root setuid - see "Installing with SUID" below.
-Both binaries need to be located in your `PATH`.
+The build process will produce two binaries `hikari` and `hikari-unlocker`; the
+latter is only built when the PAM development files are installed (see
+"Optional features"). It is used to check credentials for unlocking the screen,
+which needs to be installed with root setuid.  `hikari` can rely on `seatd`,
+`(e)logind` or other mechanisms to gain root privileges when required; however,
+if needed it can also be installed with root setuid - see "Installing with
+SUID" below.  Both binaries need to be located in your `PATH`.
 
 `hikari` can be configured via `$XDG_CONFIG_HOME/hikari/hikari.conf`, the
 default configuration can be found under `$PREFIX/etc/hikari/hikari.conf`
@@ -74,21 +76,20 @@ The default configuration expects your default terminal emulator to be specified
 in the `$TERMINAL` environment variable.
 
 The installation destination can be configured by setting `PREFIX` (default is
-`/usr/local` and does not need to be given explicitly). If you want to install
-`hikari` into a directory other than `/usr/local` you always should state the
+`/usr` and does not need to be given explicitly). If you want to install
+`hikari` into a directory other than `/usr` you always should state the
 `PREFIX` when issuing `make`, since this information is also used to specify
 where `hikari` can find the default configuration on your system and is needed
 during the compilation process. To override installation paths for `etc` specify
-`ETC_PREFIX`.
+`ETC_PREFIX`; it defaults to `/` for `PREFIX=/usr` and to `PREFIX` otherwise.
 
-Simply run `make` with `WITH_POSIX_C_SOURCE`:
+Simply run `make`:
 
 ```
-make WITH_POSIX_C_SOURCE=YES
+make
 ```
 
-The installation destination can be configured by setting `PREFIX` (default is
-`/usr/local` and does not need to be given explicitly).
+and install it afterwards:
 
 ```
 make PREFIX=/usr/local install
@@ -96,60 +97,41 @@ make PREFIX=/usr/local install
 
 `uninstall` requires the same values for prefixes.
 
-### Building with all features enabled
+### Optional features
 
-The following sections explain how to enabled features on an individual basis.
-However, to enable every feature the build system offers the `WITH_ALL` flag.
+Optional features are detected automatically: `make` enables every feature the
+wlroots in use can provide, so a plain build is a full build. A feature stays
+off when wlroots does not ship the header it needs -- a wlroots built without
+XWayland, for instance, or one that has dropped a deprecated protocol.
 
-```
-make WITH_ALL=YES
-```
-
-#### Building with XWayland support
-
-`hikari` offers optional XWayland support which is enabled via setting
-`WITH_XWAYLAND`.
+Each one can still be forced with the matching `WITH_*` flag, which is mostly
+useful to turn a feature *off*:
 
 ```
-make WITH_XWAYLAND=YES
+make WITH_XWAYLAND=NO
 ```
 
-#### Building with screencopy support
+#### XWayland support
+
+XWayland support lets X11 applications run under `hikari`.
+
+#### Screencopy support
 
 Screencopy support allows tools like `grim` to work with `hikari`, it also
-allows applications to copy the desktop content. This is disabled by default
-and can be added by setting `WITH_SCREENCOPY`.
+allows applications to copy the desktop content.
 
-```
-make WITH_SCREENCOPY=YES
-```
+#### Gammacontrol support
 
-#### Building with gammacontrol support
+Gamma control is needed for tools like `redshift`.
 
-Gamma control is needed for tools like `redshift`. This is disabled by default
-and can be enabled via setting `WITH_GAMMACONTROL`.
-
-```
-make WITH_GAMMACONTROL=YES
-```
-
-#### Building with layer-shell support
+#### Layer-shell support
 
 Some applications that are used to build desktop components require
-`layer-shell`. Examples for this are `waybar`, `wofi` and `slurp`. To turn on
-`layer-shell` support compile with the `WITH_LAYERSHELL` option.
+`layer-shell`. Examples for this are `waybar`, `wofi` and `slurp`.
 
-```
-make WITH_LAYERSHELL=YES
-```
-
-#### Building with virtual input support
+#### Virtual input support
 
 Virtual input support is needed for applications like `wayvnc`.
-
-```
-make WITH_VIRTUAL_INPUT=YES
-```
 
 #### Building the manpage
 

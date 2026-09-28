@@ -5,6 +5,7 @@
 
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/util/edges.h>
 
 #include <hikari/memory.h>
 #include <hikari/output.h>
@@ -83,66 +84,67 @@ new_popup_popup_handler(struct wl_listener *listener, void *data);
 static struct hikari_layer *
 get_layer(struct hikari_layer_popup *popup);
 
+// The exclusive zone reserves space along one edge of the output. Which edge
+// is resolved by wlroots: an explicit set_exclusive_edge (protocol version 5)
+// wins, otherwise it is deduced from the anchors. A surface anchored to a
+// corner without one is ambiguous and reserves nothing.
 static void
-apply_layer_state(struct wlr_box *usable_area,
-    uint32_t anchor,
-    int32_t exclusive,
-    int32_t margin_top,
-    int32_t margin_right,
-    int32_t margin_bottom,
-    int32_t margin_left)
+apply_layer_state(
+    struct wlr_box *usable_area, struct wlr_layer_surface_v1 *wlr_layer_surface)
 {
-  if (exclusive <= 0) {
+  struct wlr_layer_surface_v1_state *state = &wlr_layer_surface->current;
+
+  if (state->exclusive_zone <= 0) {
     return;
   }
+
   struct {
-    uint32_t anchors;
+    enum wlr_edges edge;
     int *positive_axis;
     int *negative_axis;
-    int margin;
+    int32_t margin;
   } edges[] = {
     {
-        .anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
-                   ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
-                   ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
+        .edge = WLR_EDGE_TOP,
         .positive_axis = &usable_area->y,
         .negative_axis = &usable_area->height,
-        .margin = margin_top,
+        .margin = state->margin.top,
     },
     {
-        .anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
-                   ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
-                   ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
+        .edge = WLR_EDGE_BOTTOM,
         .positive_axis = NULL,
         .negative_axis = &usable_area->height,
-        .margin = margin_bottom,
+        .margin = state->margin.bottom,
     },
     {
-        .anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
-                   ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
-                   ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
+        .edge = WLR_EDGE_LEFT,
         .positive_axis = &usable_area->x,
         .negative_axis = &usable_area->width,
-        .margin = margin_left,
+        .margin = state->margin.left,
     },
     {
-        .anchors = ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
-                   ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
-                   ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
+        .edge = WLR_EDGE_RIGHT,
         .positive_axis = NULL,
         .negative_axis = &usable_area->width,
-        .margin = margin_right,
+        .margin = state->margin.right,
     },
   };
+
+  enum wlr_edges edge =
+      wlr_layer_surface_v1_get_exclusive_edge(wlr_layer_surface);
+
   for (size_t i = 0; i < sizeof(edges) / sizeof(edges[0]); ++i) {
-    if ((anchor & edges[i].anchors) == edges[i].anchors &&
-        exclusive + edges[i].margin > 0) {
-      if (edges[i].positive_axis) {
-        *edges[i].positive_axis += exclusive + edges[i].margin;
+    if (edges[i].edge != edge) {
+      continue;
+    }
+
+    // a margin that swallows the zone would grow the usable area instead
+    int32_t size = state->exclusive_zone + edges[i].margin;
+    if (size > 0) {
+      if (edges[i].positive_axis != NULL) {
+        *edges[i].positive_axis += size;
       }
-      if (edges[i].negative_axis) {
-        *edges[i].negative_axis -= exclusive + edges[i].margin;
-      }
+      *edges[i].negative_axis -= size;
     }
   }
 }
@@ -155,16 +157,7 @@ apply_state_for_layer(struct hikari_output *output,
   struct hikari_layer *layer;
 
   wl_list_for_each (layer, &output->layers[wlr_layer], layer_surfaces) {
-    struct wlr_layer_surface_v1 *wlr_layer_surface = layer->surface;
-    struct wlr_layer_surface_v1_state *state = &wlr_layer_surface->current;
-
-    apply_layer_state(usable_area,
-        state->anchor,
-        state->exclusive_zone,
-        state->margin.top,
-        state->margin.right,
-        state->margin.bottom,
-        state->margin.left);
+    apply_layer_state(usable_area, layer->surface);
   }
 }
 

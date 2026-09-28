@@ -4,3 +4,4 @@ tests/popup_placement
 .build-flags
 /hikari
 /hikari-unlocker
+/wlr-layer-shell-unstable-v1-protocol.h
