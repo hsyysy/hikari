@@ -49,6 +49,7 @@ struct hikari_layer_popup {
   struct wlr_xdg_popup *popup;
 
   struct wl_listener commit;
+  struct wl_listener reposition;
   struct wl_listener destroy;
   struct wl_listener map;
   struct wl_listener unmap;

@@ -63,6 +63,9 @@ static void
 commit_popup_handler(struct wl_listener *listener, void *data);
 
 static void
+reposition_popup_handler(struct wl_listener *listener, void *data);
+
+static void
 destroy_popup_handler(struct wl_listener *listener, void *data);
 
 static void
@@ -235,6 +238,12 @@ popup_unconstrain(struct hikari_layer_popup *layer_popup)
   struct hikari_layer *layer = get_layer(layer_popup);
   struct hikari_output *output = layer->output;
 
+  // a layer that is not on an output yet leaves no box to constrain to, the
+  // popup stays unconfigured until the client repositions it
+  if (output == NULL) {
+    return;
+  }
+
   struct wlr_box box = { .x = -layer->geometry.x,
     .y = -layer->geometry.y,
     .width = output->geometry.width,
@@ -252,19 +261,23 @@ init_popup(
   layer_popup->commit.notify = commit_popup_handler;
   wl_signal_add(&wlr_popup->base->surface->events.commit, &layer_popup->commit);
 
+  layer_popup->reposition.notify = reposition_popup_handler;
+  wl_signal_add(&wlr_popup->events.reposition, &layer_popup->reposition);
+
   layer_popup->map.notify = map_popup_handler;
   wl_signal_add(&wlr_popup->base->surface->events.map, &layer_popup->map);
 
   layer_popup->unmap.notify = unmap_popup_handler;
   wl_signal_add(&wlr_popup->base->surface->events.unmap, &layer_popup->unmap);
 
+  // the popup is destroyed before its xdg_surface, and destroy_xdg_popup()
+  // asserts that no reposition listener is left behind, so the handler has to
+  // run on the popup's own destroy signal
   layer_popup->destroy.notify = destroy_popup_handler;
-  wl_signal_add(&wlr_popup->base->events.destroy, &layer_popup->destroy);
+  wl_signal_add(&wlr_popup->events.destroy, &layer_popup->destroy);
 
   layer_popup->new_popup.notify = new_popup_popup_handler;
   wl_signal_add(&wlr_popup->base->events.new_popup, &layer_popup->new_popup);
-
-  popup_unconstrain(layer_popup);
 }
 
 static struct hikari_layer *
@@ -590,7 +603,24 @@ commit_popup_handler(struct wl_listener *listener, void *data)
   struct hikari_layer_popup *layer_popup =
       wl_container_of(listener, layer_popup, commit);
 
+  // wlroots only schedules a configure for an initialized surface, so the popup
+  // is unconstrained on its first commit. the role commit that sets
+  // `initial_commit` runs before this signal, so it is already true here
+  if (layer_popup->popup->base->initial_commit) {
+    popup_unconstrain(layer_popup);
+  }
+
   damage_popup(layer_popup, false);
+}
+
+static void
+reposition_popup_handler(struct wl_listener *listener, void *data)
+{
+  (void)data;
+  struct hikari_layer_popup *layer_popup =
+      wl_container_of(listener, layer_popup, reposition);
+
+  popup_unconstrain(layer_popup);
 }
 
 static void
@@ -710,6 +740,7 @@ static void
 fini_popup(struct hikari_layer_popup *layer_popup)
 {
   wl_list_remove(&layer_popup->commit.link);
+  wl_list_remove(&layer_popup->reposition.link);
   wl_list_remove(&layer_popup->destroy.link);
   wl_list_remove(&layer_popup->map.link);
   wl_list_remove(&layer_popup->unmap.link);

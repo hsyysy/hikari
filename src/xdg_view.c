@@ -374,6 +374,8 @@ destroy_popup_handler(struct wl_listener *listener, void *data)
   wl_list_remove(&popup->destroy.link);
   wl_list_remove(&popup->unmap.link);
   wl_list_remove(&popup->map.link);
+  wl_list_remove(&popup->commit.link);
+  wl_list_remove(&popup->reposition.link);
   wl_list_remove(&popup->new_popup.link);
 
   hikari_free(popup);
@@ -440,6 +442,12 @@ popup_unconstrain(struct hikari_xdg_popup *popup)
 
   struct hikari_output *output = view->output;
 
+  // a view that is not on an output yet leaves no box to constrain to, the
+  // popup stays unconfigured until the client repositions it
+  if (output == NULL) {
+    return;
+  }
+
   struct wlr_box *geometry = hikari_view_geometry(view);
 
   struct wlr_box output_toplevel_sx_box = {
@@ -450,6 +458,32 @@ popup_unconstrain(struct hikari_xdg_popup *popup)
   };
 
   wlr_xdg_popup_unconstrain_from_box(wlr_popup, &output_toplevel_sx_box);
+}
+
+static void
+popup_commit(struct wl_listener *listener, void *data)
+{
+  (void)data;
+
+  struct hikari_xdg_popup *popup = wl_container_of(listener, popup, commit);
+
+  // wlroots only schedules a configure for an initialized surface, so the popup
+  // is unconstrained on its first commit. the role commit that sets
+  // `initial_commit` runs before this signal, so it is already true here
+  if (popup->popup->base->initial_commit) {
+    popup_unconstrain(popup);
+  }
+}
+
+static void
+popup_reposition(struct wl_listener *listener, void *data)
+{
+  (void)data;
+
+  struct hikari_xdg_popup *popup =
+      wl_container_of(listener, popup, reposition);
+
+  popup_unconstrain(popup);
 }
 
 static void
@@ -465,8 +499,11 @@ xdg_popup_create(struct wlr_xdg_popup *wlr_popup, struct hikari_view *parent)
 
   wlr_popup->base->surface->data = parent;
 
+  // the popup is destroyed before its xdg_surface, and destroy_xdg_popup()
+  // asserts that no reposition listener is left behind, so the handler has to
+  // run on the popup's own destroy signal
   popup->destroy.notify = destroy_popup_handler;
-  wl_signal_add(&wlr_popup->base->events.destroy, &popup->destroy);
+  wl_signal_add(&wlr_popup->events.destroy, &popup->destroy);
 
   popup->new_popup.notify = new_popup_popup_handler;
   wl_signal_add(&wlr_popup->base->events.new_popup, &popup->new_popup);
@@ -477,10 +514,14 @@ xdg_popup_create(struct wlr_xdg_popup *wlr_popup, struct hikari_view *parent)
   popup->unmap.notify = popup_unmap;
   wl_signal_add(&wlr_popup->base->surface->events.unmap, &popup->unmap);
 
+  popup->commit.notify = popup_commit;
+  wl_signal_add(&wlr_popup->base->surface->events.commit, &popup->commit);
+
+  popup->reposition.notify = popup_reposition;
+  wl_signal_add(&wlr_popup->events.reposition, &popup->reposition);
+
   hikari_view_child_init(
       (struct hikari_view_child *)popup, parent, wlr_popup->base->surface);
-
-  popup_unconstrain(popup);
 }
 
 static struct hikari_output *
