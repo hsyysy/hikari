@@ -484,7 +484,22 @@ hikari_renderer_damage_frame_handler(struct wl_listener *listener, void *data)
   pixman_region32_init(&damage);
   wlr_damage_ring_rotate_buffer(&output->damage, buffer, &damage);
 
-  if (!pixman_region32_not_empty(&damage)) {
+  /* output->needs_frame is wlroots asking for a commit for a reason that is not
+   * client damage, and it has to be honored even when the damage ring is empty:
+   * wlr_scene_output_needs_frame() -- the reference implementation -- is
+   * `output->needs_frame || damage || gamma_lut_changed`.
+   *
+   * The case that matters here is zwlr_screencopy: wlroots performs the copy in
+   * its output commit handler and bails out unless the commit carries a buffer
+   * (types/wlr_screencopy_v1.c: `if (!(state->committed &
+   * WLR_OUTPUT_STATE_BUFFER)) return;`), after setting needs_frame in the copy
+   * request. Skipping the commit therefore leaves the client -- grim, a screen
+   * recorder -- blocked until something else happens to damage the output.
+   *
+   * Committing without drawing anything is safe: wlr_damage_ring_rotate_buffer()
+   * returns the whole output for a buffer it has not seen before, so a copy can
+   * never read a buffer that was never rendered into. */
+  if (!wlr_output->needs_frame && !pixman_region32_not_empty(&damage)) {
     hikari_log_debug("frame: no damage, skipping render");
     pixman_region32_fini(&damage);
     wlr_buffer_unlock(buffer);

@@ -24,6 +24,7 @@ struct hikari_output {
   bool enabled;
 
   struct wl_listener damage_frame;
+  struct wl_listener needs_frame;
   struct wl_listener destroy;
   struct wl_listener damage_destroy;
   /* struct wl_listener mode; */

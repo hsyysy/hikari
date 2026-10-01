@@ -68,7 +68,11 @@ hikari_output_load_background(struct hikari_output *output,
   }
 
   cairo_surface_t *image = cairo_image_surface_create_from_png(path);
-  if (cairo_surface_status(image) != CAIRO_STATUS_SUCCESS) {
+  cairo_status_t status = cairo_surface_status(image);
+  if (status != CAIRO_STATUS_SUCCESS) {
+    hikari_log_warn("could not load background \"%s\": %s",
+        path,
+        cairo_status_to_string(status));
     goto done;
   }
 
@@ -124,6 +128,9 @@ hikari_output_disable(struct hikari_output *output)
   wl_list_remove(&output->damage_frame.link);
   wl_list_init(&output->damage_frame.link);
 
+  wl_list_remove(&output->needs_frame.link);
+  wl_list_init(&output->needs_frame.link);
+
   struct wlr_output_state state;
   wlr_output_state_init(&state);
   wlr_output_state_set_enabled(&state, false);
@@ -131,6 +138,26 @@ hikari_output_disable(struct hikari_output *output)
   wlr_output_state_finish(&state);
 
   output->enabled = false;
+}
+
+/* wlroots asks for a commit through output->needs_frame when the reason is not
+ * client damage -- most importantly a zwlr_screencopy client waiting for a
+ * buffer. wlr_output_update_needs_frame() only sets the flag and emits this
+ * signal; scheduling the frame is the compositor's job, and without that the
+ * render handler never runs and the copy request blocks forever. Same thing
+ * wlroots' own scene does in scene_output_handle_needs_frame(). */
+static void
+needs_frame_handler(struct wl_listener *listener, void *data)
+{
+  (void)data;
+  struct hikari_output *output =
+      wl_container_of(listener, output, needs_frame);
+
+  if (!output->enabled) {
+    return;
+  }
+
+  wlr_output_schedule_frame(output->wlr_output);
 }
 
 void
@@ -147,6 +174,10 @@ hikari_output_enable(struct hikari_output *output)
   wl_list_remove(&output->damage_frame.link);
   output->damage_frame.notify = hikari_renderer_damage_frame_handler;
   wl_signal_add(&wlr_output->events.frame, &output->damage_frame);
+
+  wl_list_remove(&output->needs_frame.link);
+  output->needs_frame.notify = needs_frame_handler;
+  wl_signal_add(&wlr_output->events.needs_frame, &output->needs_frame);
 
   struct wlr_output_state state;
   wlr_output_state_init(&state);
@@ -267,6 +298,7 @@ hikari_output_init(struct hikari_output *output, struct wlr_output *wlr_output)
     }
 
     wl_list_init(&output->damage_frame.link);
+    wl_list_init(&output->needs_frame.link);
 
     if (!hikari_server_in_lock_mode()) {
       hikari_output_enable(output);
