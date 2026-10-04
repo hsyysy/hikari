@@ -104,6 +104,7 @@ OBJS = \
 	input_buffer.o \
 	input_grab_mode.o \
 	input_method_relay.o \
+	hikari-input-method-v1-protocol.o \
 	keyboard.o \
 	keyboard_config.o \
 	layer_shell.o \
@@ -238,8 +239,10 @@ LIBS = \
 WAYLAND_SCANNER := $(shell $(PKG_CONFIG) --variable=wayland_scanner wayland-scanner 2> /dev/null)
 WAYLAND_SCANNER := $(if $(WAYLAND_SCANNER),$(WAYLAND_SCANNER),wayland-scanner)
 
+PROTOCOL_HEADERS = hikari-input-method-v1-protocol.h
+
 ifeq ($(WITH_LAYERSHELL),YES)
-PROTOCOL_HEADERS = wlr-layer-shell-unstable-v1-protocol.h
+PROTOCOL_HEADERS += wlr-layer-shell-unstable-v1-protocol.h
 endif
 
 DEPS = $(OBJS:.o=.d)
@@ -372,6 +375,14 @@ hikari: version.h $(PROTOCOL_HEADERS) $(OBJS)
 wlr-layer-shell-unstable-v1-protocol.h: protocol/wlr-layer-shell-unstable-v1.xml
 	$(WAYLAND_SCANNER) server-header $< $@
 
+hikari-input-method-v1-protocol.h: protocol/hikari-input-method-v1.xml
+	$(WAYLAND_SCANNER) server-header $< $@
+
+hikari-input-method-v1-protocol.c: protocol/hikari-input-method-v1.xml
+	$(WAYLAND_SCANNER) private-code $< $@
+
+hikari-input-method-v1-protocol.o: hikari-input-method-v1-protocol.c hikari-input-method-v1-protocol.h
+
 # Deliberately exempt from the configuration stamp: hikari_unlocker.c includes
 # only system headers (pwd.h, security/pam_appl.h, ...) and no hikari header, so
 # it has no struct whose layout depends on a WITH_* flag. It also needs none of
@@ -391,6 +402,7 @@ clean: clean-doc
 	@echo "cleaning headers"
 	@test -e _darcs && rm version.h 2> /dev/null ||:
 	@rm -f $(PROTOCOL_HEADERS) 2> /dev/null ||:
+	@rm -f hikari-input-method-v1-protocol.c hikari-input-method-v1-protocol.o hikari-input-method-v1-protocol.d 2> /dev/null ||:
 	@echo "cleaning object files"
 	@rm -f $(OBJS) $(DEPS)
 	@echo "cleaning executables"

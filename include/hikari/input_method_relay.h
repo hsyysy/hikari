@@ -45,6 +45,11 @@ struct hikari_input_popup {
 };
 
 struct hikari_input_method_relay {
+  struct wl_global *im_global;
+  struct wl_list im_resources;
+  struct wl_list im_clients;
+  uint32_t next_im_client_id;
+
   struct wl_list text_inputs;
   struct wl_list popups;
   struct wlr_input_method_v2 *input_method;

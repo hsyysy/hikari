@@ -5,3 +5,5 @@ tests/popup_placement
 /hikari
 /hikari-unlocker
 /wlr-layer-shell-unstable-v1-protocol.h
+/hikari-input-method-v1-protocol.h
+/hikari-input-method-v1-protocol.c

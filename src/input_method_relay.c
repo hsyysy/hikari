@@ -1,11 +1,14 @@
 #include <hikari/input_method_relay.h>
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_text_input_v3.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_compositor.h>
+
+#include "hikari-input-method-v1-protocol.h"
 
 #include <hikari/log.h>
 #include <hikari/output.h>
@@ -15,6 +18,137 @@
 #ifdef HAVE_LAYERSHELL
 #include <hikari/layer_shell.h>
 #endif
+
+struct hikari_im_resource {
+  struct wl_resource *resource;
+  struct wl_list link;
+};
+
+struct hikari_im_client {
+  struct wl_client *client;
+  uint32_t id;
+  struct hikari_input_method_relay *relay;
+  struct wl_listener destroy;
+  struct wl_list link;
+};
+
+static struct hikari_text_input *
+relay_find_focused_text_input(struct hikari_input_method_relay *relay);
+
+static void
+im_send_focused_client(struct hikari_input_method_relay *relay, uint32_t id)
+{
+  struct hikari_im_resource *im_resource;
+  wl_list_for_each (im_resource, &relay->im_resources, link) {
+    hikari_input_method_v1_send_focused_client(im_resource->resource, id);
+  }
+}
+
+static void
+im_send_client_gone(struct hikari_input_method_relay *relay, uint32_t id)
+{
+  struct hikari_im_resource *im_resource;
+  wl_list_for_each (im_resource, &relay->im_resources, link) {
+    hikari_input_method_v1_send_client_gone(im_resource->resource, id);
+  }
+}
+
+static void
+handle_im_client_destroy(struct wl_listener *listener, void *data)
+{
+  (void)data;
+  struct hikari_im_client *entry =
+      wl_container_of(listener, entry, destroy);
+
+  im_send_client_gone(entry->relay, entry->id);
+  wl_list_remove(&entry->destroy.link);
+  wl_list_remove(&entry->link);
+  free(entry);
+}
+
+static uint32_t
+im_client_id(struct hikari_input_method_relay *relay, struct wl_client *client)
+{
+  struct hikari_im_client *entry;
+  wl_list_for_each (entry, &relay->im_clients, link) {
+    if (entry->client == client) {
+      return entry->id;
+    }
+  }
+
+  if (relay->next_im_client_id == UINT32_MAX) {
+    return 0;
+  }
+
+  entry = calloc(1, sizeof(*entry));
+  if (entry == NULL) {
+    return 0;
+  }
+
+  entry->client = client;
+  entry->relay = relay;
+  entry->id = ++relay->next_im_client_id;
+  entry->destroy.notify = handle_im_client_destroy;
+  wl_client_add_destroy_listener(client, &entry->destroy);
+  wl_list_insert(&relay->im_clients, &entry->link);
+
+  return entry->id;
+}
+
+static void
+handle_im_resource_destroy(struct wl_resource *resource)
+{
+  struct hikari_im_resource *im_resource = wl_resource_get_user_data(resource);
+  wl_list_remove(&im_resource->link);
+  free(im_resource);
+}
+
+static void
+handle_im_resource_destroy_request(struct wl_client *client,
+    struct wl_resource *resource)
+{
+  (void)client;
+  wl_resource_destroy(resource);
+}
+
+static const struct hikari_input_method_v1_interface
+    hikari_im_implementation = {
+      .destroy = handle_im_resource_destroy_request,
+    };
+
+static void
+bind_im_global(struct wl_client *client, void *data, uint32_t version,
+    uint32_t id)
+{
+  struct hikari_input_method_relay *relay = data;
+  struct wl_resource *resource = wl_resource_create(
+      client, &hikari_input_method_v1_interface, version, id);
+  if (resource == NULL) {
+    wl_client_post_no_memory(client);
+    return;
+  }
+
+  struct hikari_im_resource *im_resource = calloc(1, sizeof(*im_resource));
+  if (im_resource == NULL) {
+    wl_resource_destroy(resource);
+    wl_client_post_no_memory(client);
+    return;
+  }
+
+  im_resource->resource = resource;
+  wl_resource_set_implementation(resource, &hikari_im_implementation,
+      im_resource, handle_im_resource_destroy);
+  wl_list_insert(&relay->im_resources, &im_resource->link);
+
+  struct hikari_text_input *text_input = relay_find_focused_text_input(relay);
+  if (text_input != NULL) {
+    uint32_t client_id = im_client_id(
+        relay, wl_resource_get_client(text_input->input->resource));
+    if (client_id != 0) {
+      hikari_input_method_v1_send_focused_client(resource, client_id);
+    }
+  }
+}
 
 static struct hikari_text_input *
 relay_find_focused_text_input(struct hikari_input_method_relay *relay)
@@ -381,6 +515,12 @@ handle_text_input_enable(struct wl_listener *listener, void *data)
     return;
   }
 
+  uint32_t id = im_client_id(
+      relay, wl_resource_get_client(text_input->input->resource));
+  if (id != 0) {
+    im_send_focused_client(relay, id);
+  }
+
   wlr_input_method_v2_send_activate(relay->input_method);
   relay_send_im_state(relay, text_input->input);
 }
@@ -613,6 +753,11 @@ handle_new_input_method(struct wl_listener *listener, void *data)
 
   struct hikari_text_input *text_input = relay_find_focused_text_input(relay);
   if (text_input != NULL) {
+    uint32_t id = im_client_id(
+        relay, wl_resource_get_client(text_input->input->resource));
+    if (id != 0) {
+      im_send_focused_client(relay, id);
+    }
     wlr_input_method_v2_send_activate(im);
     relay_send_im_state(relay, text_input->input);
   }
@@ -670,7 +815,16 @@ hikari_input_method_relay_init(struct hikari_input_method_relay *relay,
 {
   wl_list_init(&relay->text_inputs);
   wl_list_init(&relay->popups);
+  wl_list_init(&relay->im_resources);
+  wl_list_init(&relay->im_clients);
+  relay->next_im_client_id = 0;
   relay->input_method = NULL;
+
+  relay->im_global = wl_global_create(hikari_server.display,
+      &hikari_input_method_v1_interface, 1, relay, bind_im_global);
+  if (relay->im_global == NULL) {
+    hikari_log_error("failed to create input method client identity global");
+  }
 
   relay->new_text_input.notify = handle_new_text_input;
   wl_signal_add(
