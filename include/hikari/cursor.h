@@ -5,6 +5,7 @@
 #include <wlr/types/wlr_xcursor_manager.h>
 
 #include <hikari/binding_group.h>
+#include <hikari/pinch.h>
 
 struct hikari_output;
 
@@ -19,6 +20,13 @@ struct hikari_cursor {
   struct wl_listener button;
   struct wl_listener surface_destroy;
   struct wl_listener request_set_cursor;
+
+  /* Pinch gestures. wlroots already emits these from the cursor; hikari just
+   * never routed them anywhere, so no client could see a two-finger pinch. */
+  struct wl_listener pinch_begin;
+  struct wl_listener pinch_update;
+  struct wl_listener pinch_end;
+  struct hikari_pinch pinch;
 
   struct hikari_binding_group bindings[HIKARI_BINDING_GROUP_MASK];
 };

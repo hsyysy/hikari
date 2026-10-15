@@ -124,6 +124,7 @@ OBJS = \
 	normal_mode.o \
 	output.o \
 	output_config.o \
+	pinch.o \
 	pointer.o \
 	pointer_config.o \
 	position_config.o \
@@ -239,7 +240,7 @@ LIBS = \
 WAYLAND_SCANNER := $(shell $(PKG_CONFIG) --variable=wayland_scanner wayland-scanner 2> /dev/null)
 WAYLAND_SCANNER := $(if $(WAYLAND_SCANNER),$(WAYLAND_SCANNER),wayland-scanner)
 
-PROTOCOL_HEADERS = hikari-input-method-v1-protocol.h
+PROTOCOL_HEADERS = hikari-input-method-v1-protocol.h pointer-gestures-unstable-v1-protocol.h
 
 ifeq ($(WITH_LAYERSHELL),YES)
 PROTOCOL_HEADERS += wlr-layer-shell-unstable-v1-protocol.h
@@ -266,11 +267,25 @@ all: hikari $(UNLOCKER)
 # reports an error. This test exercises a pure function and allocates nothing,
 # so the leak check buys nothing -- disable it rather than let the target go
 # red for environmental reasons, which is how a check stops being run at all.
-test: tests/popup_placement
+# The pinch resource-lifetime test allocates and frees objects and keeps normal
+# sanitizer/leak checks enabled.
+test: tests/popup_placement tests/pinch
 	@ASAN_OPTIONS=detect_leaks=0 ./tests/popup_placement
+	@./tests/pinch
 
 tests/popup_placement: tests/popup_placement.c include/hikari/input_method_relay.h $(CFLAGS_STAMP)
 	$(CC) $(CFLAGS) -o $@ $<
+
+tests/pinch: tests/pinch.c src/pinch.c include/hikari/pinch.h pointer-gestures-unstable-v1-protocol.h tests/pointer-gestures-protocol.c $(CFLAGS_STAMP)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ tests/pinch.c src/pinch.c tests/pointer-gestures-protocol.c $(LIBS) $(shell $(PKG_CONFIG) --libs wayland-client)
+
+pointer-gestures-unstable-v1-protocol.h: protocol/pointer-gestures-unstable-v1.xml
+	$(WAYLAND_SCANNER) server-header $< $@
+
+tests/pointer-gestures-protocol.c: protocol/pointer-gestures-unstable-v1.xml
+	$(WAYLAND_SCANNER) private-code $< $@
+
+pinch.o: pointer-gestures-unstable-v1-protocol.h
 
 # Pre-flight check: boot under the headless backend and make sure startup
 # survives. Exists because mixing build configurations (e.g. rebuilding only
@@ -408,7 +423,7 @@ clean: clean-doc
 	@echo "cleaning executables"
 	@rm hikari 2> /dev/null ||:
 	@rm hikari-unlocker 2> /dev/null ||:
-	@rm -f tests/popup_placement tests/popup_placement.d 2> /dev/null ||:
+	@rm -f tests/popup_placement tests/popup_placement.d tests/pinch tests/pinch.d tests/pointer-gestures-protocol.c 2> /dev/null ||:
 	@rm -f $(CFLAGS_STAMP) 2> /dev/null ||:
 
 share/man/man1/hikari.1:

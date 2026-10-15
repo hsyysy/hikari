@@ -4,6 +4,7 @@
 #include <errno.h>
 
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_pointer_gestures_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 
@@ -28,6 +29,15 @@ button_handler(struct wl_listener *listener, void *data);
 
 static void
 axis_handler(struct wl_listener *listener, void *data);
+
+static void
+pinch_begin_handler(struct wl_listener *listener, void *data);
+
+static void
+pinch_update_handler(struct wl_listener *listener, void *data);
+
+static void
+pinch_end_handler(struct wl_listener *listener, void *data);
 
 static void
 request_set_cursor_handler(struct wl_listener *listener, void *data);
@@ -172,6 +182,17 @@ hikari_cursor_activate(struct hikari_cursor *cursor)
   cursor->axis.notify = axis_handler;
   wl_signal_add(&wlr_cursor->events.axis, &cursor->axis);
 
+  hikari_pinch_init(&cursor->pinch, hikari_server.gestures, hikari_server.seat);
+
+  cursor->pinch_begin.notify = pinch_begin_handler;
+  wl_signal_add(&wlr_cursor->events.pinch_begin, &cursor->pinch_begin);
+
+  cursor->pinch_update.notify = pinch_update_handler;
+  wl_signal_add(&wlr_cursor->events.pinch_update, &cursor->pinch_update);
+
+  cursor->pinch_end.notify = pinch_end_handler;
+  wl_signal_add(&wlr_cursor->events.pinch_end, &cursor->pinch_end);
+
   cursor->request_set_cursor.notify = request_set_cursor_handler;
   wl_signal_add(&hikari_server.seat->events.request_set_cursor,
       &cursor->request_set_cursor);
@@ -182,11 +203,16 @@ hikari_cursor_activate(struct hikari_cursor *cursor)
 void
 hikari_cursor_deactivate(struct hikari_cursor *cursor)
 {
+  hikari_pinch_fini(&cursor->pinch);
+
   wl_list_remove(&cursor->motion_absolute.link);
   wl_list_remove(&cursor->frame.link);
   wl_list_remove(&cursor->motion.link);
   wl_list_remove(&cursor->button.link);
   wl_list_remove(&cursor->axis.link);
+  wl_list_remove(&cursor->pinch_begin.link);
+  wl_list_remove(&cursor->pinch_update.link);
+  wl_list_remove(&cursor->pinch_end.link);
   wl_list_remove(&cursor->request_set_cursor.link);
 
   hikari_cursor_set_image(cursor, NULL);
@@ -300,6 +326,28 @@ axis_handler(struct wl_listener *listener, void *data)
       event->delta_discrete,
       event->source,
       event->relative_direction);
+}
+
+/* Keep one begin/update/end sequence tied to its original recipients. */
+static void
+pinch_begin_handler(struct wl_listener *listener, void *data)
+{
+  struct hikari_cursor *cursor = wl_container_of(listener, cursor, pinch_begin);
+  hikari_pinch_begin(&cursor->pinch, data);
+}
+
+static void
+pinch_update_handler(struct wl_listener *listener, void *data)
+{
+  struct hikari_cursor *cursor = wl_container_of(listener, cursor, pinch_update);
+  hikari_pinch_update(&cursor->pinch, data);
+}
+
+static void
+pinch_end_handler(struct wl_listener *listener, void *data)
+{
+  struct hikari_cursor *cursor = wl_container_of(listener, cursor, pinch_end);
+  hikari_pinch_end(&cursor->pinch, data);
 }
 
 static void

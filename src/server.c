@@ -27,6 +27,7 @@
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
+#include <wlr/types/wlr_pointer_gestures_v1.h>
 #include <wlr/types/wlr_xdg_toplevel_icon_v1.h>
 #include <wlr/types/wlr_text_input_v3.h>
 #include <wlr/types/wlr_input_method_v2.h>
@@ -512,6 +513,21 @@ setup_xwayland(struct hikari_server *server)
   setenv("DISPLAY", server->xwayland->display_name, true);
 }
 #endif
+
+/* Expose zwp_pointer_gestures_v1 so clients can receive swipe, pinch and hold
+ * events. wlr_cursor already emits them (see hikari/cursor.h); without this
+ * global there is no way for a client to subscribe, so a two-finger pinch is
+ * invisible to every application.
+ *
+ * None of hikari's own bindings are gestures, so this global changes no
+ * compositor behaviour -- it only lets clients see what the cursor hears. */
+static void
+setup_gestures(struct hikari_server *server)
+{
+  server->gestures = wlr_pointer_gestures_v1_create(server->display);
+
+  assert(server->gestures != NULL);
+}
 
 static void
 setup_cursor(struct hikari_server *server)
@@ -1008,6 +1024,7 @@ server_init(struct hikari_server *server, char *config_path)
   setup_xwayland(server);
 #endif
   setup_cursor(server);
+  setup_gestures(server);
 #ifdef HAVE_VIRTUAL_INPUT
   setup_virtual_keyboard(server);
   setup_virtual_pointer(server);

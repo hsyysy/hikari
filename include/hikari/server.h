@@ -32,6 +32,7 @@
 #include <hikari/input_method_relay.h>
 
 struct wlr_input_device;
+struct wlr_pointer_gestures_v1;
 
 struct hikari_output;
 struct hikari_group;
@@ -102,6 +103,12 @@ struct hikari_server {
 
   struct wlr_cursor_shape_manager_v1 *cursor_shape_manager;
   struct wl_listener cursor_shape_request;
+
+  /* The zwp_pointer_gestures_v1 global. None of hikari's own bindings are
+   * gestures, so this exists purely so that clients can receive swipe, pinch
+   * and hold events: the cursor already produces them (see hikari/cursor.h),
+   * they were simply never routed to a global. */
+  struct wlr_pointer_gestures_v1 *gestures;
 
   struct hikari_input_method_relay input_method_relay;
 

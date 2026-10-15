@@ -358,6 +358,9 @@ override_visibility(void)
 void
 hikari_lock_mode_enter(void)
 {
+  /* End the client gesture before focus is cleared and listeners stop. */
+  hikari_pinch_cancel(&hikari_server.cursor.pinch);
+
   struct hikari_workspace *workspace = hikari_server.workspace;
   struct hikari_view *focus_view = workspace->focus_view;
 

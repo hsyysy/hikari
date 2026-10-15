@@ -7,3 +7,7 @@ tests/popup_placement
 /wlr-layer-shell-unstable-v1-protocol.h
 /hikari-input-method-v1-protocol.h
 /hikari-input-method-v1-protocol.c
+
+/tests/pinch
+/tests/pointer-gestures-protocol.c
+/pointer-gestures-unstable-v1-protocol.h
